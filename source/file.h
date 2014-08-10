@@ -12,68 +12,68 @@
 
 class File {
 public:
-	File(const std::string &path)
-		: fd(-1), bytes(0), map(nullptr)
-	{
-		fd = ::open(path.data(), O_RDONLY);
+    File(const std::string &path)
+        : fd(-1), bytes(0), map(nullptr)
+    {
+        fd = ::open(path.data(), O_RDONLY);
 
-		if (fd < 0)
-			throw Error("cannot open file");
-	}
+        if (fd < 0)
+            throw Error("cannot open file");
+    }
 
-	~File() noexcept
-	{
-		close();
-	}
+    ~File() noexcept
+    {
+        close();
+    }
 
-	void close() noexcept
-	{
-		if (map != nullptr) {
-			::munmap(map, bytes);
+    void close() noexcept
+    {
+        if (map != nullptr) {
+            ::munmap(map, bytes);
 
-			map = nullptr;
-		}
+            map = nullptr;
+        }
 
-		if (fd > -1) { 
-			::close(fd);
+        if (fd > -1) { 
+            ::close(fd);
 
-			fd = -1;
-		}
-	}
+            fd = -1;
+        }
+    }
 
-	explicit operator int() const noexcept
-	{
-		return fd;
-	}
+    explicit operator int() const noexcept
+    {
+        return fd;
+    }
 
-	size_t size() const throw()
-	{
-		off_t was = ::lseek(fd, 0, SEEK_CUR);
-		off_t size = ::lseek(fd, 0, SEEK_END);
+    size_t size() const throw()
+    {
+        off_t was = ::lseek(fd, 0, SEEK_CUR);
+        off_t size = ::lseek(fd, 0, SEEK_END);
 
-		::lseek(fd, was, SEEK_SET);
+        ::lseek(fd, was, SEEK_SET);
 
-		return size;
-	}
+        return size;
+    }
 
-	void* mmap()
-	{
-		if (map == nullptr) {
-			bytes = size();
+    void* mmap()
+    {
+        if (map == nullptr) {
+            bytes = size();
 
-			map = ::mmap(nullptr, bytes, PROT_NONE, MAP_SHARED, fd, 0);
+            map = ::mmap(nullptr, bytes, PROT_NONE, MAP_SHARED, fd, 0);
 
-			if (map == nullptr)
-				throw Error("failed invoke mmap() on file");
-		}
+            if (map == nullptr)
+                throw Error("failed invoke mmap() on file");
+        }
 
-		return map;
-	}
+        return map;
+    }
 
 private:
-	int			fd;
-	size_t		bytes;
-	void		*map;
+    int         fd;
+    size_t      bytes;
+    void        *map;
 };
 
 #endif/*H_FINCORE_FILE*/

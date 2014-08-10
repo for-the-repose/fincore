@@ -10,253 +10,253 @@
 #include "iface.h"
 
 namespace Stats {
-	class Sum : public IFact {
-	public:
-		class Feed : public IFeed {
-		public:
-			Feed(const Args &args) : total(args.pages) , used(0) { }
-
-			void operator () (size_t page) noexcept
-			{
-				used++;
-			}
-
-			void desc() const noexcept
-			{
-				std::cerr 
-					<< "usage " << total << " of " << used << std::endl;
-			}
-
-			bool diff(const IFeed &feed_, float thresh) const noexcept
-			{
-				assert(thresh > 0 && thresh <= 1.0);
-
-				const Feed &feed = dynamic_cast<const Feed&>(feed_);
-
-				auto diff = (double)(used + feed.used) / (total + feed.total);
-
-				return (total != feed.total) || diff > thresh;
-			}
-
-		protected:
-			size_t		total;
-			size_t		used;
-		};
-
-		FeedRef make(const Args &args)
-		{
-			auto feed = std::make_shared<Feed>(args);
-
-			return std::static_pointer_cast<IFeed>(feed);
-		}
-	};
-
-
-	class Bands : public IFact {
-		class Span {
-		public:
-			Span(size_t at_, size_t bytes_)
-				: at(at_), bytes(bytes_)
-			{
+    class Sum : public IFact {
+    public:
+        class Feed : public IFeed {
+        public:
+            Feed(const Args &args) : total(args.pages) , used(0) { }
+
+            void operator () (size_t page) noexcept
+            {
+                used++;
+            }
+
+            void desc() const noexcept
+            {
+                std::cerr 
+                    << "usage " << total << " of " << used << std::endl;
+            }
+
+            bool diff(const IFeed &feed_, float thresh) const noexcept
+            {
+                assert(thresh > 0 && thresh <= 1.0);
+
+                const Feed &feed = dynamic_cast<const Feed&>(feed_);
+
+                auto diff = (double)(used + feed.used) / (total + feed.total);
+
+                return (total != feed.total) || diff > thresh;
+            }
+
+        protected:
+            size_t      total;
+            size_t      used;
+        };
+
+        FeedRef make(const Args &args)
+        {
+            auto feed = std::make_shared<Feed>(args);
+
+            return std::static_pointer_cast<IFeed>(feed);
+        }
+    };
+
+
+    class Bands : public IFact {
+        class Span {
+        public:
+            Span(size_t at_, size_t bytes_)
+                : at(at_), bytes(bytes_)
+            {
 
-			}
-
-			operator bool() const noexcept
-			{
-				return bytes > 0;
-			}
+            }
+
+            operator bool() const noexcept
+            {
+                return bytes > 0;
+            }
 
-			size_t advance(size_t piece) noexcept
-			{
-				piece = std::min(piece, bytes);
+            size_t advance(size_t piece) noexcept
+            {
+                piece = std::min(piece, bytes);
 
-				at 		+= piece;
-				bytes 	-= piece;
+                at      += piece;
+                bytes   -= piece;
 
-				return piece;
-			}
+                return piece;
+            }
 
-			size_t	at;
-			size_t	bytes;
-		};
+            size_t  at;
+            size_t  bytes;
+        };
 
-		class Band {
-		public:
-			Band(size_t at_, size_t limit_)
-					: at(at_), limit(limit_), value(0) { }
+        class Band {
+        public:
+            Band(size_t at_, size_t limit_)
+                    : at(at_), limit(limit_), value(0) { }
 
-			bool operator ==(size_t offset) const noexcept
-			{
-				return offset >= at && offset < after();
-			}
+            bool operator ==(size_t offset) const noexcept
+            {
+                return offset >= at && offset < after();
+            }
 
-			bool isEmpty() const noexcept
-			{
-				return value == 0;
-			}
+            bool isEmpty() const noexcept
+            {
+                return value == 0;
+            }
 
-			bool isFull() const noexcept
-			{
-				return value >= limit;
-			}
+            bool isFull() const noexcept
+            {
+                return value >= limit;
+            }
 
-			unsigned prcFill() const noexcept
-			{
-				return (value * 100 / limit);
-			}
+            unsigned prcFill() const noexcept
+            {
+                return (value * 100 / limit);
+            }
 
-			size_t after() const noexcept
-			{
-				return at + limit;
-			}
+            size_t after() const noexcept
+            {
+                return at + limit;
+            }
 
-			void inc(Span &span) noexcept
-			{
-				assert(span.at >= at);
+            void inc(Span &span) noexcept
+            {
+                assert(span.at >= at);
 
-				if (*this == span.at) {
-					size_t piece = limit - (span.at - at);
+                if (*this == span.at) {
+                    size_t piece = limit - (span.at - at);
 
-					value += span.advance(piece);
+                    value += span.advance(piece);
 
-					assert(value <= limit);
-				}
-			}
+                    assert(value <= limit);
+                }
+            }
 
-			size_t		at;
-			size_t		limit;
-			size_t		value;
-		};
+            size_t      at;
+            size_t      limit;
+            size_t      value;
+        };
 
-	public:
-		class Feed : public Sum::Feed {
-			using bands_t = std::vector<Band>;
+    public:
+        class Feed : public Sum::Feed {
+            using bands_t = std::vector<Band>;
 
-		public:
-			Feed(const Args &args, size_t slots) 
-				: Sum::Feed(args)
-				, gran(args.gran)
-			{
-				const size_t bytes = args.bytesPaged();
-			
-				if (slots < bytes) {
-					limit = (bytes + slots - 1) / slots;
+        public:
+            Feed(const Args &args, size_t slots) 
+                : Sum::Feed(args)
+                , gran(args.gran)
+            {
+                const size_t bytes = args.bytesPaged();
+            
+                if (slots < bytes) {
+                    limit = (bytes + slots - 1) / slots;
 
-					assert(limit > 1);
+                    assert(limit > 1);
 
-				} else {
-					limit = 1;
-				}
+                } else {
+                    limit = 1;
+                }
 
-				size_t edge = limit * (bytes - slots * (limit - 1));
+                size_t edge = limit * (bytes - slots * (limit - 1));
 
-				bands.reserve(slots);
+                bands.reserve(slots);
 
-				for (size_t off = 0; off < bytes;) {
-					bands.emplace_back(off, limit - bool(off >= edge));
+                for (size_t off = 0; off < bytes;) {
+                    bands.emplace_back(off, limit - bool(off >= edge));
 
-					off += bands.back().limit;
-				}
+                    off += bands.back().limit;
+                }
 
-				assert(bands.back().after() == bytes);
-			}
+                assert(bands.back().after() == bytes);
+            }
 
-			void operator()(size_t page) noexcept
-			{
-				Sum::Feed::operator()(page);
+            void operator()(size_t page) noexcept
+            {
+                Sum::Feed::operator()(page);
 
-				Span span(page * gran, gran);
+                Span span(page * gran, gran);
 
-				bands_t::iterator it = bands.begin();
+                bands_t::iterator it = bands.begin();
 
-				it += span.at / limit;
+                it += span.at / limit;
 
-				assert(it->at <= span.at);
+                assert(it->at <= span.at);
 
-				it = std::find(it, bands.end(), span.at);
+                it = std::find(it, bands.end(), span.at);
 
-				for (; span && it != bands.end(); it++) {
+                for (; span && it != bands.end(); it++) {
 
-					it->inc(span);
-				}
+                    it->inc(span);
+                }
 
-				assert(!span);
-			}
+                assert(!span);
+            }
 
-			void desc() const noexcept
-			{
-				std::string	dots;
+            void desc() const noexcept
+            {
+                std::string dots;
 
-				dots.reserve(bands.size());
+                dots.reserve(bands.size());
 
-				for (const auto &it: bands) {
-					if (it.isEmpty()) {
-						dots.append(1, '.');
+                for (const auto &it: bands) {
+                    if (it.isEmpty()) {
+                        dots.append(1, '.');
 
-					} else if (it.isFull()) {
-						dots.append(1, '+');
+                    } else if (it.isFull()) {
+                        dots.append(1, '+');
 
-					} else if (it.prcFill() <= 1) {
-						dots.append(1, '~');
+                    } else if (it.prcFill() <= 1) {
+                        dots.append(1, '~');
 
-					} else {
-						dots.append(1, '0' + it.prcFill() / 10);
+                    } else {
+                        dots.append(1, '0' + it.prcFill() / 10);
 
-						assert(dots.back() <= '9');
-					}
-				}
+                        assert(dots.back() <= '9');
+                    }
+                }
 
-				unsigned raito = used * 100 / total;
+                unsigned raito = used * 100 / total;
 
-				std::cerr << std::setw(3) << raito << "%"
-							<< " [" << dots << "]" << std::endl;
-			}
+                std::cerr << std::setw(3) << raito << "%"
+                            << " [" << dots << "]" << std::endl;
+            }
 
-			bool diff(const IFeed &feed_, float thresh) const noexcept
-			{
-				const Feed &feed = dynamic_cast<const Feed&>(feed_);
+            bool diff(const IFeed &feed_, float thresh) const noexcept
+            {
+                const Feed &feed = dynamic_cast<const Feed&>(feed_);
 
-				return Sum::Feed::diff(feed, thresh)
-							|| diff(feed.bands, thresh);
-			}
+                return Sum::Feed::diff(feed, thresh)
+                            || diff(feed.bands, thresh);
+            }
 
-		protected:
-			bool diff(const bands_t &vec, float thresh) const noexcept
-			{
-				size_t slots = std::min(bands.size(), vec.size());
+        protected:
+            bool diff(const bands_t &vec, float thresh) const noexcept
+            {
+                size_t slots = std::min(bands.size(), vec.size());
 
-				unsigned diff = 0;
+                unsigned diff = 0;
 
-				for (size_t z = 0; z < slots; z++) {
-					const unsigned pa = bands[z].prcFill();
-					const unsigned pb = vec[z].prcFill();
+                for (size_t z = 0; z < slots; z++) {
+                    const unsigned pa = bands[z].prcFill();
+                    const unsigned pb = vec[z].prcFill();
 
-					diff += std::max(pa, pb) - std::min(pa, pb);
-				}
+                    diff += std::max(pa, pb) - std::min(pa, pb);
+                }
 
-				return (float)diff / 100. > thresh;
-			}
+                return (float)diff / 100. > thresh;
+            }
 
-			size_t		gran;
-			size_t		limit;
-			bands_t		bands;
-		};
+            size_t      gran;
+            size_t      limit;
+            bands_t     bands;
+        };
 
-		Bands(size_t bands_) : bands(bands_)
-		{
+        Bands(size_t bands_) : bands(bands_)
+        {
 
-		}
+        }
 
-		FeedRef make(const Args &args)
-		{
-			auto feed = std::make_shared<Feed>(args, bands);
+        FeedRef make(const Args &args)
+        {
+            auto feed = std::make_shared<Feed>(args, bands);
 
-			return std::static_pointer_cast<IFeed>(feed);
-		}
+            return std::static_pointer_cast<IFeed>(feed);
+        }
 
-	protected:
-		const size_t	bands;
-	};
+    protected:
+        const size_t    bands;
+    };
 }
 
 #endif/*H_FINCORE_STATS*/

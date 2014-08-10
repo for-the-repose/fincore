@@ -7,48 +7,48 @@
 #include <cstdlib>
 
 namespace Stats {
-	class Args {
-	public:
-		Args(size_t gran_, size_t bytes_)
-			: gran(gran_), bytes(bytes_)
-		{
-			pages = (bytes + gran - 1) / gran;
+    class Args {
+    public:
+        Args(size_t gran_, size_t bytes_)
+            : gran(gran_), bytes(bytes_)
+        {
+            pages = (bytes + gran - 1) / gran;
 
-			if (pages < 1) abort();
-		}
+            if (pages < 1) abort();
+        }
 
-		size_t bytesPaged() const noexcept
-		{
-			return pages * gran;
-		}
+        size_t bytesPaged() const noexcept
+        {
+            return pages * gran;
+        }
 
-		size_t	gran;	/* page size		*/
-		size_t	pages;	/* pages in file	*/
-		size_t	bytes;	/* total bytes		*/
-	};
+        size_t  gran;   /* page size        */
+        size_t  pages;  /* pages in file    */
+        size_t  bytes;  /* total bytes      */
+    };
 
-	class IFeed {
-	public:
-		virtual ~IFeed() {
+    class IFeed {
+    public:
+        virtual ~IFeed() {
 
-		};
+        };
 
-		virtual void operator()(size_t page) noexcept = 0;
-		virtual void desc() const noexcept = 0;
-		virtual bool diff(const IFeed&, float thresh) const noexcept = 0;
-	};
+        virtual void operator()(size_t page) noexcept = 0;
+        virtual void desc() const noexcept = 0;
+        virtual bool diff(const IFeed&, float thresh) const noexcept = 0;
+    };
 
-	using FeedRef = std::shared_ptr<IFeed>;
+    using FeedRef = std::shared_ptr<IFeed>;
 
-	class IFact {
-	public:
+    class IFact {
+    public:
 
-		virtual ~IFact() {
+        virtual ~IFact() {
 
-		}
+        }
 
-		virtual FeedRef make(const Args&) = 0;
-	};
+        virtual FeedRef make(const Args&) = 0;
+    };
 }
 
 #endif/*H_FINCODE_IFACE*/
