@@ -67,4 +67,4 @@ protected:
     array_t     array;
 };
 
-#endif/*H_FINCORE_PRORE*/
+#endif/*H_FINCORE_PROBE*/

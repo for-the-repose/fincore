@@ -52,4 +52,4 @@ namespace Stats {
     };
 }
 
-#endif/*H_FINCODE_IFACE*/
+#endif/*H_FINCORE_IFACE*/

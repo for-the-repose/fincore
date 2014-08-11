@@ -40,6 +40,8 @@ public:
             if (!was.get() || was->diff(*now, cfg.thresh)) {
                 putStamp();
 
+                std::cerr << " ";
+
                 was = now;
                 was->desc();
             }
