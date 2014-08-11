@@ -34,6 +34,7 @@ namespace Stats {
         };
 
         virtual void operator()(size_t page) noexcept = 0;
+        virtual void done() noexcept = 0;
         virtual void desc() const noexcept = 0;
         virtual bool diff(const IFeed&, float thresh) const noexcept = 0;
     };

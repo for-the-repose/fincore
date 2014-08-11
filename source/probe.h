@@ -54,6 +54,8 @@ public:
             it += bytes;
         }
 
+        feeder->done();
+
         return feeder;
     }
 

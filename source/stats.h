@@ -21,6 +21,8 @@ namespace Stats {
                 used++;
             }
 
+            void done() noexcept { }
+
             void desc() const noexcept
             {
                 std::cerr 
@@ -181,6 +183,11 @@ namespace Stats {
                 }
 
                 assert(!span);
+            }
+
+            void done() noexcept
+            {
+
             }
 
             void desc() const noexcept
