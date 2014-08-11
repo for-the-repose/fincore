@@ -6,6 +6,8 @@
 #include <memory>
 #include <cstdlib>
 
+#include "span.h"
+
 namespace Stats {
     class Args {
     public:
@@ -17,7 +19,7 @@ namespace Stats {
             if (pages < 1) abort();
         }
 
-        size_t bytesPaged() const noexcept
+        size_t paged() const noexcept
         {
             return pages * gran;
         }
@@ -33,8 +35,13 @@ namespace Stats {
 
         };
 
-        virtual void operator()(size_t page) noexcept = 0;
-        virtual void done() noexcept = 0;
+        virtual void operator()(Span&) noexcept = 0;
+
+        virtual void freeze() noexcept
+        {
+
+        }
+
         virtual void desc() const noexcept = 0;
         virtual bool diff(const IFeed&, float thresh) const noexcept = 0;
     };

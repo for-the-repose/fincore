@@ -35,9 +35,11 @@ public:
         
         char *it = (char*) file.mmap(); 
         
-        /* const char *end = it + args.bytesPaged(); */
+        /* const char *end = it + args.paged(); */
 
         Stats::FeedRef feeder = fact.make(args);
+
+        Stats::Span accum(0, 0);
 
         for (size_t page = 0; page < args.pages; page += items) {
             const size_t chunk = std::min(args.pages - page, items);
@@ -47,14 +49,23 @@ public:
                 throw Error("error happens while mincore() invocation");
 
             for (size_t z = 0; z < chunk; z++) {
-                if (array[z] & 0x01)
-                    (*feeder)(page + z);
+                if (array[z] & 0x01) {
+                    Stats::Span span((page + z) * gran, gran);
+
+                    if (!accum.join(span)) {
+                        (*feeder)(accum);
+
+                        accum = span;
+                    }
+                }
             }
 
             it += bytes;
         }
 
-        feeder->done();
+        if (accum) (*feeder)(accum);
+
+        feeder->freeze();
 
         return feeder;
     }

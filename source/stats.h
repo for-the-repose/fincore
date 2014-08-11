@@ -14,14 +14,14 @@ namespace Stats {
     public:
         class Feed : public IFeed {
         public:
-            Feed(const Args &args) : total(args.pages) , used(0) { }
+            Feed(const Args &args) : total(args.paged()) , used(0) { }
 
-            void operator () (size_t page) noexcept
+            void operator () (Span &span) noexcept
             {
-                used++;
+                used += span.bytes;
             }
 
-            void done() noexcept { }
+            void freeze() noexcept { }
 
             void desc() const noexcept
             {
@@ -55,48 +55,6 @@ namespace Stats {
 
 
     class Bands : public IFact {
-        class Span {
-        public:
-            Span(size_t at_, size_t bytes_)
-                : at(at_), bytes(bytes_)
-            {
-
-            }
-
-            operator bool() const noexcept
-            {
-                return bytes > 0;
-            }
-
-            bool after() const noexcept
-            {
-                return at + bytes;
-            }
-
-            size_t advance(size_t piece) noexcept
-            {
-                piece = std::min(piece, bytes);
-
-                at      += piece;
-                bytes   -= piece;
-
-                return piece;
-            }
-
-            bool join(const Span &span) noexcept
-            {
-                if (after() == span.at) {
-
-                    bytes += span.bytes;
-                }
-
-                return after() == span.at;
-            }
-
-            size_t  at;
-            size_t  bytes;
-        };
-
         class Band {
         public:
             Band(size_t at_, size_t limit_)
@@ -150,12 +108,9 @@ namespace Stats {
             using bands_t = std::vector<Band>;
 
         public:
-            Feed(const Args &args, size_t slots) 
-                : Sum::Feed(args)
-                , gran(args.gran)
-                , accum(0, 0)
+            Feed(const Args &args, size_t slots) : Sum::Feed(args)
             {
-                const size_t bytes = args.bytesPaged();
+                const size_t bytes = args.paged();
             
                 if (slots < bytes) {
                     limit = (bytes + slots - 1) / slots;
@@ -179,22 +134,26 @@ namespace Stats {
                 assert(bands.back().after() == bytes);
             }
 
-            void operator()(size_t page) noexcept
+            void operator()(Span &span) noexcept
             {
-                Sum::Feed::operator()(page);
+                Sum::Feed::operator()(span);
 
-                Span span(page * gran, gran);
+                if (span) {
+                    bands_t::iterator it = bands.begin();
 
-                if (!accum.join(span)) {
-                    aggr(accum);
+                    it += span.at / limit;
 
-                    accum = span;
+                    assert(it->at <= span.at);
+
+                    it = std::find(it, bands.end(), span.at);
+
+                    for (; span && it != bands.end(); it++) {
+
+                        it->inc(span);
+                    }
                 }
-            }
 
-            void done() noexcept
-            {
-                aggr(accum);
+                assert(!span);
             }
 
             void desc() const noexcept
@@ -242,26 +201,6 @@ namespace Stats {
             }
 
         protected:
-            void aggr(Span &span) noexcept
-            {
-                if (span) {
-                    bands_t::iterator it = bands.begin();
-
-                    it += span.at / limit;
-
-                    assert(it->at <= span.at);
-
-                    it = std::find(it, bands.end(), span.at);
-
-                    for (; span && it != bands.end(); it++) {
-
-                        it->inc(span);
-                    }
-                }
-
-                assert(!span);
-            }
-
             bool diff(const bands_t &vec, float thresh) const noexcept
             {
                 size_t slots = std::min(bands.size(), vec.size());
@@ -278,10 +217,8 @@ namespace Stats {
                 return diff > thresh;
             }
 
-            size_t      gran;
             size_t      limit;
             bands_t     bands;
-            Span        accum;
         };
 
         Bands(size_t bands_) : bands(bands_)
