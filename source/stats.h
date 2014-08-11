@@ -68,6 +68,11 @@ namespace Stats {
                 return bytes > 0;
             }
 
+            bool after() const noexcept
+            {
+                return at + bytes;
+            }
+
             size_t advance(size_t piece) noexcept
             {
                 piece = std::min(piece, bytes);
@@ -76,6 +81,16 @@ namespace Stats {
                 bytes   -= piece;
 
                 return piece;
+            }
+
+            bool join(const Span &span) noexcept
+            {
+                if (after() == span.at) {
+
+                    bytes += span.bytes;
+                }
+
+                return after() == span.at;
             }
 
             size_t  at;
@@ -138,6 +153,7 @@ namespace Stats {
             Feed(const Args &args, size_t slots) 
                 : Sum::Feed(args)
                 , gran(args.gran)
+                , accum(0, 0)
             {
                 const size_t bytes = args.bytesPaged();
             
@@ -169,25 +185,16 @@ namespace Stats {
 
                 Span span(page * gran, gran);
 
-                bands_t::iterator it = bands.begin();
+                if (!accum.join(span)) {
+                    aggr(accum);
 
-                it += span.at / limit;
-
-                assert(it->at <= span.at);
-
-                it = std::find(it, bands.end(), span.at);
-
-                for (; span && it != bands.end(); it++) {
-
-                    it->inc(span);
+                    accum = span;
                 }
-
-                assert(!span);
             }
 
             void done() noexcept
             {
-
+                aggr(accum);
             }
 
             void desc() const noexcept
@@ -228,6 +235,26 @@ namespace Stats {
             }
 
         protected:
+            void aggr(Span &span) noexcept
+            {
+                if (span) {
+                    bands_t::iterator it = bands.begin();
+
+                    it += span.at / limit;
+
+                    assert(it->at <= span.at);
+
+                    it = std::find(it, bands.end(), span.at);
+
+                    for (; span && it != bands.end(); it++) {
+
+                        it->inc(span);
+                    }
+                }
+
+                assert(!span);
+            }
+
             bool diff(const bands_t &vec, float thresh) const noexcept
             {
                 size_t slots = std::min(bands.size(), vec.size());
@@ -247,6 +274,7 @@ namespace Stats {
             size_t      gran;
             size_t      limit;
             bands_t     bands;
+            Span        accum;
         };
 
         Bands(size_t bands_) : bands(bands_)
