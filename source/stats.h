@@ -117,9 +117,9 @@ namespace Stats {
                 return value >= limit;
             }
 
-            unsigned prcFill() const noexcept
+            double usage() const noexcept
             {
-                return (value * 100 / limit);
+                return (double)value / limit;
             }
 
             size_t after() const noexcept
@@ -210,13 +210,20 @@ namespace Stats {
                     } else if (it.isFull()) {
                         dots.append(1, '+');
 
-                    } else if (it.prcFill() <= 1) {
-                        dots.append(1, '~');
-
                     } else {
-                        dots.append(1, '0' + it.prcFill() / 10);
+                        const double fill = it.usage();
 
-                        assert(dots.back() <= '9');
+                        if (fill < 0.001) {
+                            dots.append(1, ',');
+
+                        } else if (fill  < 0.01) {
+                            dots.append(1, '~');
+
+                        } else {
+                            dots.append(1, '0' + int(fill * 10));
+
+                            assert(dots.back() <= '9');
+                        }
                     }
                 }
 
@@ -259,16 +266,16 @@ namespace Stats {
             {
                 size_t slots = std::min(bands.size(), vec.size());
 
-                unsigned diff = 0;
+                double diff = 0;
 
                 for (size_t z = 0; z < slots; z++) {
-                    const unsigned pa = bands[z].prcFill();
-                    const unsigned pb = vec[z].prcFill();
+                    const double pa = bands[z].usage();
+                    const double pb = vec[z].usage();
 
                     diff += std::max(pa, pb) - std::min(pa, pb);
                 }
 
-                return (float)diff / 100. > thresh;
+                return diff > thresh;
             }
 
             size_t      gran;

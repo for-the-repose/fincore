@@ -14,7 +14,8 @@ fincore -c 1000 -d 1 -r 0.1 -f path_to_some_file
 
 symbols region description:
 	.	uncached data
-	~	less than 1% cached
+    ,   less than 0.1 % cached
+	~	less than 1.0 % cached
 	0	[1, 10) percents cached
 	1	[10, 20) percents cached
 	...
