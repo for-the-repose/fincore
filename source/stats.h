@@ -186,10 +186,11 @@ namespace Stats {
                     }
                 }
 
-                unsigned raito = used * 100 / total;
+                double raito = used * 100. / total;
 
-                std::cerr << std::setw(3) << raito << "%"
-                            << " [" << dots << "]" << std::endl;
+                std::cerr
+                    << std::fixed << std::setprecision(1) << std::setw(5)
+                    << raito << "%" << " [" << dots << "]" << std::endl;
             }
 
             bool diff(const IFeed &feed_, float thresh) const noexcept
