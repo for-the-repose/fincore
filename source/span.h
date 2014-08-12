@@ -17,7 +17,7 @@ namespace Stats {
             return bytes > 0;
         }
 
-        bool after() const noexcept
+        size_t after() const noexcept
         {
             return at + bytes;
         }
@@ -35,11 +35,12 @@ namespace Stats {
         bool join(const Span &span) noexcept
         {
             if (after() == span.at) {
-
                 bytes += span.bytes;
+
+                return true;
             }
 
-            return after() == span.at;
+            return false;
         }
 
         size_t  at;

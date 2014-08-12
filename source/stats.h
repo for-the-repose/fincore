@@ -8,6 +8,7 @@
 #include <iomanip>
 
 #include "iface.h"
+#include "utils.h"
 
 namespace Stats {
     class Sum : public IFact {
@@ -35,7 +36,9 @@ namespace Stats {
 
                 const Feed &feed = dynamic_cast<const Feed&>(feed_);
 
-                auto diff = (double)(used + feed.used) / (total + feed.total);
+                auto diff = (double)Utils::diff(used, feed.used);
+
+                diff = 2 * diff / (total + feed.total);
 
                 return (total != feed.total) || diff > thresh;
             }
@@ -212,7 +215,7 @@ namespace Stats {
                     const double pa = bands[z].usage();
                     const double pb = vec[z].usage();
 
-                    diff += std::max(pa, pb) - std::min(pa, pb);
+                    diff += Utils::diff(pa, pb);
                 }
 
                 return diff > thresh;
