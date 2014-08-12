@@ -4,10 +4,35 @@
 
 #include "monit.h"
 
+int do_trace(int argc, char *argv[]);
 void usage() noexcept;
 
 
 int main(int argc, char *argv[])
+{
+    if (argc < 2) {
+        usage();
+
+        return 0;
+
+    } else {
+        std::string mod(argv[1]);
+
+        if (mod == "trace") {
+            return do_trace(argc--, argv++);
+
+        } else {
+            std::cerr << "unknown mode " << mod << std::endl;
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
+int do_trace(int argc, char *argv[])
 {
     extern char *optarg;
     
@@ -15,18 +40,13 @@ int main(int argc, char *argv[])
     Monit::Cfg  cfg;
 
     while (true) {
-        static const char opts[] = "f:d:c:r:h";
+        static const char opts[] = "f:d:c:r:";
 
         const int opt = getopt(argc, argv, opts);
 
         if (opt < 0) break;
 
-        if (opt == 'h') {
-            usage();
-
-            return 0;
-
-        } else if (opt == 'f') {
+        if (opt == 'f') {
             path = optarg;
 
         } else if (opt == 'd') {
@@ -55,6 +75,16 @@ int main(int argc, char *argv[])
 
 void usage() noexcept
 {
-    std::cerr << "fincore -f PATH [ -c COUNT] [-d DELAY]" << std::endl;
+    using namespace std;
+
+    cerr
+        << "fincore mode [ ARGS ] ..."
+        << endl
+        << endl << " Options for trace"
+        << endl << "   -f path    path to file for tracing"
+        << endl << "   -c count   how many snaps make"
+        << endl << "   -d gran    time granulation, secs"
+        << endl << "   -r float   refresh changes threshold"
+        << endl;
 }
 
