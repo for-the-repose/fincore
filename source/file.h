@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 
 #include "error.h"
+#include "span.h"
 
 class File {
 public:
@@ -54,6 +55,15 @@ public:
         ::lseek(fd, was, SEEK_SET);
 
         return size;
+    }
+
+    void evict(const Stats::Span &sp) const
+    {
+        int eno = ::posix_fadvise(fd, sp.at, sp.bytes, POSIX_FADV_DONTNEED);
+
+        if (eno != 0 ) {
+            throw Error("failed to invoke fadvise() on file");
+        }
     }
 
     void* mmap()

@@ -3,8 +3,10 @@
 #include <string>
 
 #include "monit.h"
+#include "file.h"
 
 int do_trace(int argc, char *argv[]);
+int do_evict(int argc, char *argv[]);
 void usage() noexcept;
 
 
@@ -20,6 +22,9 @@ int main(int argc, char *argv[])
 
         if (mod == "trace") {
             return do_trace(argc--, argv++);
+
+        } else if (mod == "evict") {
+            return do_evict(argc--, argv++);
 
         } else {
             std::cerr << "unknown mode " << mod << std::endl;
@@ -73,6 +78,39 @@ int do_trace(int argc, char *argv[])
 }
 
 
+int do_evict(int argc, char *argv[])
+{
+    extern char *optarg;
+
+    std::string path;
+
+    while (true) {
+        static const char opts[] = "f:";
+
+        const int opt = getopt(argc, argv, opts);
+
+        if (opt < 0) break;
+
+        if (opt == 'f') {
+            path = optarg;
+        }
+    }
+
+    if (path.empty()) {
+        std::cerr << "path to file is not given" << std::endl;
+
+    } else {
+        File file(path);
+
+        const Stats::Span all(0, file.size());
+
+        file.evict(all);
+    }
+
+    return 0;
+}
+
+
 void usage() noexcept
 {
     using namespace std;
@@ -85,6 +123,9 @@ void usage() noexcept
         << endl << "   -c count   how many snaps make"
         << endl << "   -d gran    time granulation, secs"
         << endl << "   -r float   refresh changes threshold"
+        << endl
+        << endl << " Options for evict"
+        << endl << "   -f path    path to file for evicting"
         << endl;
 }
 
