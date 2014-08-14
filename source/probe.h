@@ -24,13 +24,9 @@ public:
     }
 
     Stats::FeedRef operator()(
-                const std::string   &path,
+                const OS::MemRg     &mem,
                 Stats::IFact        &fact) const
     {
-        OS::File    file(path);
-        OS::Mapped  mapped = file.mmap();
-        OS::MemRg   mem = mapped;
-
         const size_t gran = mem.gran();
         const Stats::Args args(gran, mem.bytes);
 

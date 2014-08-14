@@ -35,7 +35,19 @@ public:
         Stats::FeedRef  was;
 
         for(unsigned count = cfg.count; count > 0; count--) {
-            auto now = probe(path, aggr);
+            OS::File  file;
+
+            try {
+                file = OS::File(path);
+
+            } catch (Error &error) {
+                std::cerr << error.what() << std::endl;
+
+                break;
+            }
+
+            auto map = file.mmap();
+            auto now = probe(map, aggr);
 
             if (!was.get() || was->diff(*now, cfg.thresh)) {
                 putStamp();
