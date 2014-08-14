@@ -100,7 +100,7 @@ int do_evict(int argc, char *argv[])
         std::cerr << "path to file is not given" << std::endl;
 
     } else {
-        File file(path);
+        OS::File file(path);
 
         const Utils::Span all(0, file.size());
 

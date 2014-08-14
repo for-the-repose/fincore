@@ -20,29 +20,32 @@ public:
     Probe()
         : items(64 * 1024)
     {
-        gran = getpagesize();
-        
         array = array_t(new uint8_t[items]);
     }
 
     Stats::FeedRef operator()(
-                const std::string   &path, 
+                const std::string   &path,
                 Stats::IFact        &fact) const
     {
-        File file(path);
+        OS::File    file(path);
+        OS::Mapped  mapped = file.mmap();
+        OS::MemRg   mem = mapped;
 
-        const Stats::Args args(gran, file.size());
+        const size_t gran = mem.gran();
+        const Stats::Args args(gran, mem.bytes);
 
         Stats::FeedRef feeder = fact.make(args);
 
-        if (args.paged() > 0) {
-            char *it = (char*) file.mmap();
+        if (mem.paged() > 0) {
+            char *it = mem;
 
             Utils::Span accum(0, 0);
 
-            for (size_t page = 0; page < args.pages; page += items) {
-                const size_t chunk = std::min(args.pages - page, items);
-                const size_t bytes = chunk * args.gran;
+            const size_t pages = mem.pages();
+
+            for (size_t page = 0; page < pages; page += items) {
+                const size_t chunk = std::min(pages - page, items);
+                const size_t bytes = chunk * gran;
 
                 if (mincore(it, bytes, array.get()) < 0 )
                     throw Error("error happens while mincore() invocation");
@@ -74,7 +77,6 @@ protected:
     using array_t = std::unique_ptr<uint8_t[]>;
 
     size_t      items;
-    size_t      gran;
     array_t     array;
 };
 
