@@ -15,8 +15,6 @@ namespace Stats {
             : gran(gran_), bytes(bytes_)
         {
             pages = (bytes + gran - 1) / gran;
-
-            if (pages < 1) abort();
         }
 
         size_t paged() const noexcept

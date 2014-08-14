@@ -32,38 +32,38 @@ public:
         File file(path);
 
         const Stats::Args args(gran, file.size());
-        
-        char *it = (char*) file.mmap(); 
-        
-        /* const char *end = it + args.paged(); */
 
         Stats::FeedRef feeder = fact.make(args);
 
-        Utils::Span accum(0, 0);
+        if (args.paged() > 0) {
+            char *it = (char*) file.mmap();
 
-        for (size_t page = 0; page < args.pages; page += items) {
-            const size_t chunk = std::min(args.pages - page, items);
-            const size_t bytes = chunk * args.gran;
+            Utils::Span accum(0, 0);
 
-            if (mincore(it, bytes, array.get()) < 0 )
-                throw Error("error happens while mincore() invocation");
+            for (size_t page = 0; page < args.pages; page += items) {
+                const size_t chunk = std::min(args.pages - page, items);
+                const size_t bytes = chunk * args.gran;
 
-            for (size_t z = 0; z < chunk; z++) {
-                if (array[z] & 0x01) {
-                    Utils::Span span((page + z) * gran, gran);
+                if (mincore(it, bytes, array.get()) < 0 )
+                    throw Error("error happens while mincore() invocation");
 
-                    if (!accum.join(span)) {
-                        (*feeder)(accum);
+                for (size_t z = 0; z < chunk; z++) {
+                    if (array[z] & 0x01) {
+                        Utils::Span span((page + z) * gran, gran);
 
-                        accum = span;
+                        if (!accum.join(span)) {
+                            (*feeder)(accum);
+
+                            accum = span;
+                        }
                     }
                 }
+
+                it += bytes;
             }
 
-            it += bytes;
+            if (accum) (*feeder)(accum);
         }
-
-        if (accum) (*feeder)(accum);
 
         feeder->freeze();
 
