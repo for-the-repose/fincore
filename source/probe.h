@@ -10,27 +10,24 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#include <functional>
 
 #include "error.h"
 #include "file.h"
-#include "iface.h"
 
 class Probe {
 public:
+    using Func = std::function<void(Utils::Span&)>;
+
     Probe()
         : items(64 * 1024)
     {
         array = array_t(new uint8_t[items]);
     }
 
-    Stats::FeedRef operator()(
-                const OS::MemRg     &mem,
-                Stats::IFact        &fact) const
+    void operator()(const OS::MemRg &mem, const Func &feed) const
     {
         const size_t gran = mem.gran();
-        const Stats::Args args(gran, mem.bytes);
-
-        Stats::FeedRef feeder = fact.make(args);
 
         if (mem.paged() > 0) {
             char *it = mem;
@@ -51,7 +48,7 @@ public:
                         Utils::Span span((page + z) * gran, gran);
 
                         if (!accum.join(span)) {
-                            (*feeder)(accum);
+                            feed(accum);
 
                             accum = span;
                         }
@@ -61,12 +58,8 @@ public:
                 it += bytes;
             }
 
-            if (accum) (*feeder)(accum);
+            if (accum) feed(accum);
         }
-
-        feeder->freeze();
-
-        return feeder;
     }
 
 protected:

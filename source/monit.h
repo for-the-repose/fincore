@@ -27,12 +27,11 @@ public:
 
     void Do(std::string &path)
     {
-        Stats::Bands aggr(48);
         Probe probe;
 
         const std::chrono::seconds duration(cfg.delay);
 
-        Stats::FeedRef  was;
+        Stats::Bands::Ref  was;
 
         for(unsigned count = cfg.count; count > 0; count--) {
             OS::File  file;
@@ -47,14 +46,19 @@ public:
             }
 
             auto map = file.mmap();
-            auto now = probe(map, aggr);
+
+            Stats::Bands::Ref now(new Stats::Bands(map, 48));
+
+            const OS::MemRg mem = map;
+
+            probe(mem, [&](Utils::Span &span) { (*now)(span); });
 
             if (!was.get() || was->diff(*now, cfg.thresh)) {
                 putStamp();
 
                 std::cerr << " ";
 
-                was = now;
+                was.reset(now.release());
                 was->desc();
             }
 
