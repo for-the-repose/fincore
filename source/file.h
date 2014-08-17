@@ -57,7 +57,7 @@ public:
         return size;
     }
 
-    void evict(const Stats::Span &sp) const
+    void evict(const Utils::Span &sp) const
     {
         int eno = ::posix_fadvise(fd, sp.at, sp.bytes, POSIX_FADV_DONTNEED);
 

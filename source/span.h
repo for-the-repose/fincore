@@ -3,22 +3,19 @@
 #ifndef H_FINCORE_SPAN
 #define H_FINCORE_SPAN
 
-namespace Stats {
+namespace Utils {
     class Span {
     public:
-        Span(size_t at_, size_t bytes_)
-            : at(at_), bytes(bytes_)
-        {
+        Span(size_t at_, size_t bytes_) noexcept
+            : at(at_), bytes(bytes_) { }
 
-        }
+        Span() noexcept : Span(0, 0) { }
 
-        operator bool() const noexcept
-        {
+        operator bool() const noexcept {
             return bytes > 0;
         }
 
-        size_t after() const noexcept
-        {
+        size_t after() const noexcept {
             return at + bytes;
         }
 
@@ -43,9 +40,36 @@ namespace Stats {
             return false;
         }
 
-        size_t  at;
-        size_t  bytes;
+        size_t      at;
+        size_t      bytes;
     };
+
+    class Gran : public Span {
+    public:
+        Gran(unsigned page_, const Span &span)
+            : Span(span), page(page_) { }
+
+        size_t pages() const noexcept {
+            return (bytes + page - 1) / page;
+        }
+
+        size_t paged() const noexcept {
+            return page * pages();
+        }
+
+        unsigned gran() const noexcept {
+            return page;
+        }
+
+    protected:
+        unsigned    page;
+    };
+
+    void swap(Span &left, Span &right)
+    {
+        std::swap(left.at,    right.at);
+        std::swap(left.bytes, right.bytes);
+    }
 }
 
 #endif/*H_FINCORE_SPAN*/

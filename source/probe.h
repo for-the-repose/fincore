@@ -39,7 +39,7 @@ public:
 
         Stats::FeedRef feeder = fact.make(args);
 
-        Stats::Span accum(0, 0);
+        Utils::Span accum(0, 0);
 
         for (size_t page = 0; page < args.pages; page += items) {
             const size_t chunk = std::min(args.pages - page, items);
@@ -50,7 +50,7 @@ public:
 
             for (size_t z = 0; z < chunk; z++) {
                 if (array[z] & 0x01) {
-                    Stats::Span span((page + z) * gran, gran);
+                    Utils::Span span((page + z) * gran, gran);
 
                     if (!accum.join(span)) {
                         (*feeder)(accum);

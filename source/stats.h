@@ -17,7 +17,7 @@ namespace Stats {
         public:
             Feed(const Args &args) : total(args.paged()) , used(0) { }
 
-            void operator () (Span &span) noexcept
+            void operator () (Utils::Span &span) noexcept
             {
                 used += span.bytes;
             }
@@ -88,7 +88,7 @@ namespace Stats {
                 return at + limit;
             }
 
-            void inc(Span &span) noexcept
+            void inc(Utils::Span &span) noexcept
             {
                 assert(span.at >= at);
 
@@ -137,7 +137,7 @@ namespace Stats {
                 assert(bands.back().after() == bytes);
             }
 
-            void operator()(Span &span) noexcept
+            void operator()(Utils::Span &span) noexcept
             {
                 Sum::Feed::operator()(span);
 

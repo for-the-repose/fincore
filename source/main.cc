@@ -102,7 +102,7 @@ int do_evict(int argc, char *argv[])
     } else {
         File file(path);
 
-        const Stats::Span all(0, file.size());
+        const Utils::Span all(0, file.size());
 
         file.evict(all);
     }

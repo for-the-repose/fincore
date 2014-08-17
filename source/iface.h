@@ -35,7 +35,7 @@ namespace Stats {
 
         };
 
-        virtual void operator()(Span&) noexcept = 0;
+        virtual void operator()(Utils::Span&) noexcept = 0;
 
         virtual void freeze() noexcept
         {
