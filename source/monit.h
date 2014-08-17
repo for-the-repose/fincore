@@ -56,7 +56,7 @@ public:
             if (!was.get() || was->diff(*now, cfg.thresh)) {
                 putStamp();
 
-                std::cerr << " ";
+                std::cout << " ";
 
                 was.reset(now.release());
                 was->desc();
@@ -76,7 +76,7 @@ public:
 
         std::strftime(line, sizeof(line), "%m-%d %H:%M:%S", &parts);
 
-        std::cerr << line;
+        std::cout << line;
     }
 
 protected:
