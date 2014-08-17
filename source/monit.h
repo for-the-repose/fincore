@@ -74,7 +74,7 @@ public:
         
         char line[64];
 
-        std::strftime(line, sizeof(line), "%Y-%m-%d %H:%M:%S", &parts);
+        std::strftime(line, sizeof(line), "%m-%d %H:%M:%S", &parts);
 
         std::cerr << line;
     }

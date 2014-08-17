@@ -8,6 +8,7 @@
 #include <iomanip>
 
 #include "utils.h"
+#include "humans.h"
 
 namespace Stats {
     class Sum {
@@ -168,9 +169,12 @@ namespace Stats {
 
             double raito = used * 100. / total;
 
-            std::cerr
+            std::cout
                 << std::fixed << std::setprecision(1) << std::setw(5)
-                << raito << "%" << " [" << dots << "]" << std::endl;
+                << raito << "%" << " [" << dots << "]"
+                << " "
+                << Humans::Value(total)
+                << std::endl;
         }
 
         bool diff(const Bands &feed, float thresh) const noexcept
