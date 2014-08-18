@@ -10,9 +10,12 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <cstring>
 
 #include "probe.h"
-#include "stats.h"
+#include "diff.h"
+#include "print.h"
+
 
 class Monit {
 public:
@@ -49,17 +52,12 @@ public:
 
             Stats::Bands::Ref now(new Stats::Bands(map, 48));
 
-            const OS::MemRg mem = map;
+            probe(map, [&](Utils::Span &span) { (*now)(span); });
 
-            probe(mem, [&](Utils::Span &span) { (*now)(span); });
-
-            if (!was.get() || was->diff(*now, cfg.thresh)) {
-                putStamp();
-
-                std::cout << " ";
-
+            if (!was.get() || Stats::Diff()(*was, *now) > cfg.thresh) {
                 was.reset(now.release());
-                was->desc();
+
+                std::cout << Stamp() << " " << Stats::Print(*was) << std::endl;
             }
 
             if (count > 1)
@@ -67,16 +65,22 @@ public:
         }
     }
 
-    void putStamp() const noexcept
+    std::string Stamp() const noexcept
     {
-        std::time_t now = std::time(nullptr);
-        const std::tm parts = *std::localtime(&now);
+        using namespace std;
+
+        time_t now = time(nullptr);
+        tm parts;
+
+        memset(&parts, 0, sizeof(parts));
+
+        localtime_r(&now, &parts);
         
         char line[64];
 
-        std::strftime(line, sizeof(line), "%m-%d %H:%M:%S", &parts);
+        strftime(line, sizeof(line), "%m-%d %H:%M:%S", &parts);
 
-        std::cout << line;
+        return line;
     }
 
 protected:

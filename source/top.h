@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 #include "walk.h"
-#include "stats.h"
 #include "probe.h"
 #include "humans.h"
 

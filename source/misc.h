@@ -6,6 +6,11 @@
 namespace Utils {
 
     namespace Misc {
+        template<typename Val>
+        Val Diff(const Val &one, const Val &two) {
+            return std::max(one, two) - std::min(one, two);
+        }
+
         constexpr size_t Pow10(unsigned xval) {
             return xval < 1 ? 1 : 10 * Pow10(xval - 1);
         }
