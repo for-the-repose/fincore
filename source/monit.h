@@ -4,8 +4,6 @@
 #define H_FINCORE_MONIT
 
 #include <unistd.h>
-#include <thread>
-#include <chrono>
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -15,10 +13,12 @@
 #include "probe.h"
 #include "diff.h"
 #include "print.h"
-
+#include "ticks.h"
 
 class Monit {
 public:
+    using Ticks = Utils::Ticks<>;
+
     class Cfg {
     public:
         unsigned    delay   = 0;
@@ -32,11 +32,9 @@ public:
     {
         Probe probe;
 
-        const std::chrono::seconds duration(cfg.delay);
-
         Stats::Bands::Ref  was;
 
-        for(unsigned count = cfg.count; count > 0; count--) {
+        for (Ticks ti(cfg.delay * 1000, cfg.count); ti();) {
             OS::File  file;
 
             try {
@@ -59,9 +57,6 @@ public:
 
                 std::cout << Stamp() << " " << Stats::Print(*was) << std::endl;
             }
-
-            if (count > 1)
-                std::this_thread::sleep_for(duration);
         }
     }
 
