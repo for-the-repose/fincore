@@ -123,13 +123,27 @@ public:
 
     void Do(const std::string &root)
     {
+        Utils::Dir::Walk walk(root);
+
+        Do(root, walk);
+    }
+
+    void Do(std::istream &in)
+    {
+        Utils::Dir::List list(in);
+
+        Do("", list);
+    }
+
+protected:
+    void Do(const std::string &root, Utils::Dir::Enum &walk)
+    {
         using namespace Utils;
 
         MakeReductor();
 
-        Dir::Walk   walk(root);
         Probe       probe;
-        Entry       top(0, 0, Dir::Ref(OS::EDir, 0, std::string(root)));
+        Entry       top(0, 0, Dir::Ref(OS::EDir, 0, ":summary"));
         Entry       aggr;
 
         while(walk) {
@@ -189,7 +203,6 @@ public:
         Drain();
     }
 
-protected:
     void MakeReductor()
     {
         assert(!reduct);

@@ -121,10 +121,11 @@ int do_stats(int argc, char *argv[])
     extern char *optarg;
 
     std::string path;
+    bool        input = false;
     Top::Cfg    cfg;
 
     while (true) {
-        static const char opts[] = "f:d:r:l:zs";
+        static const char opts[] = "f:d:r:l:zsi";
 
         const int opt = getopt(argc, argv, opts);
 
@@ -132,6 +133,9 @@ int do_stats(int argc, char *argv[])
 
         if (opt == 'f') {
             path = optarg;
+
+        } else if (opt == 'i') {
+            input = true;
 
         } else if (opt == 'd') {
             cfg.edge = std::stoull(optarg);
@@ -162,11 +166,17 @@ int do_stats(int argc, char *argv[])
         }
     }
 
-    if (path.empty()) {
-        std::cerr << "path to directory is not given" << std::endl;
+    if (!path.empty() && input) {
+        std::cerr << "only one of -f or -i allowed" << std::endl;
+
+    } else if (!path.empty()){
+        Top(cfg).Do(path);
+
+    } else if (input) {
+        Top(cfg).Do(std::cin);
 
     } else {
-        Top(cfg).Do(path);
+        std::cerr << "path to directory is not given" << std::endl;
     }
 
     return 0;
@@ -191,6 +201,7 @@ void usage() noexcept
         << endl
         << endl << " Options for stats"
         << endl << "   -f path    path to directory for stats"
+        << endl << "   -i         read path names from stdin"
         << endl << "   -d depth   depth detalization limit"
         << endl << "   -z         show entries with zero usage"
         << endl << "   -r kind    type of reduction: none, top"
