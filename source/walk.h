@@ -10,19 +10,9 @@
 
 namespace Utils {
     namespace Dir {
-        enum EType{
-            ENone   = 0,
-            EReg    = 1,
-            EDir    = 2,
-            ELink   = 3,
-            ESock   = 4,
-            EOther  = 5,
-            EAccess = 8,
-        };
-
         class Ref {
         public:
-            Ref() : type(ENone), depth(0) { }
+            Ref() : type(OS::EInvalid), depth(0) { }
 
             Ref(Ref &&ref)
                 : type(ref.type), depth(ref.depth)
@@ -30,15 +20,15 @@ namespace Utils {
                 name = std::move(ref.name);
             }
 
-            Ref(EType type_, unsigned depth_, std::string && name_)
+            Ref(OS::FType type_, unsigned depth_, std::string && name_)
                 : type(type_), depth(depth_), name(name_)
             {
-                assert(type != ENone);
+                assert(type != OS::EInvalid);
             }
 
             operator bool() const noexcept
             {
-                return type != ENone;
+                return type != OS::EInvalid;
             }
 
             bool IsAbove(const Ref &ref) const noexcept
@@ -46,7 +36,7 @@ namespace Utils {
                 return depth < ref.depth;
             }
 
-            EType           type;
+            OS::FType       type;
             unsigned        depth;
             std::string     name;
         };
@@ -142,16 +132,16 @@ namespace Utils {
                         if (name == ".." || name == ".")
                             continue;
 
-                        EType type = EOther;
+                        OS::FType type = OS::EOther;
 
                         if (entry->d_type == DT_REG) {
-                            type = EReg;
+                            type = OS::EReg;
 
                         } else if (entry->d_type == DT_DIR) {
-                            type = EDir;
+                            type = OS::EDir;
 
                         } else if (entry->d_type == DT_LNK) {
-                            type = ELink;
+                            type = OS::ELink;
 
                         } else if (entry->d_type == DT_UNKNOWN) {
 
@@ -215,15 +205,15 @@ namespace Utils {
                     if (!label) {
                         stack.pop_back();
 
-                    } else if (label.type == EDir) {
+                    } else if (label.type == OS::EDir) {
                         try {
                             deep(label.name);
 
-                            return Ref(EDir, depth, trace(false));
+                            return Ref(OS::EDir, depth, trace(false));
 
                         } catch (Error &error) {
 
-                            return Ref(EAccess, depth, trace(false));
+                            return Ref(OS::EAccess, depth, trace(false));
                         }
 
                     } else {

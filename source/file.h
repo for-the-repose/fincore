@@ -4,14 +4,37 @@
 #define H_FINCORE_FILE
 
 #include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 
 #include "error.h"
 #include "span.h"
 
 namespace OS {
+    class Loc {
+    public:
+        Loc(dev_t dev_ = 0, ino_t ino_ = 0)
+            : dev(dev_), ino(ino_) { }
+
+        dev_t   dev     = 0;
+        ino_t   ino     = 0;
+    };
+
+    enum FType {
+        EInvalid    = 0,
+        EReg        = 1,
+        EDir        = 2,
+        EChar       = 3,
+        EBlock      = 4,
+        EFifo       = 5,
+        ELink       = 6,
+        ESock       = 7,
+        EOther      = 8,
+        EAccess     = 9,
+    };
 
     class MemRg : public Utils::Gran {
     public:
@@ -158,6 +181,47 @@ namespace OS {
         int         fd;
     };
 
+    class Stat {
+    public:
+        Stat(const std::string &path)
+        {
+            struct stat st;
+
+            if (lstat(path.c_str(), &st) == 0) {
+                feed(st);
+
+            } else if (errno == EACCES) {
+                type = EAccess;
+            }
+        }
+
+        void feed(const struct stat &st) noexcept
+        {
+            loc = Loc(st.st_dev, st.st_ino);
+
+            links = st.st_nlink;
+
+            if (S_ISREG(st.st_mode)) {
+                type = EReg;
+            } else if (S_ISDIR(st.st_mode)) {
+                type = EDir;
+            } else if (S_ISCHR(st.st_mode)) {
+                type = EChar;
+            } else if (S_ISBLK(st.st_mode)) {
+                type = EBlock;
+            } else if (S_ISFIFO(st.st_mode)) {
+                type = EFifo;
+            } else if (S_ISLNK(st.st_mode))  {
+                type = ELink;
+            } else if (S_ISSOCK(st.st_mode)) {
+                type = ESock;
+            }
+        }
+
+        FType       type    = EInvalid;
+        Loc         loc;
+        nlink_t     links   = 0;
+    };
 }
 
 #endif/*H_FINCORE_FILE*/

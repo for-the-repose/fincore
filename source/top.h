@@ -129,7 +129,7 @@ public:
 
         Dir::Walk   walk(root);
         Probe       probe;
-        Entry       top(0, 0, Dir::Ref(Dir::EDir, 0, std::string(root)));
+        Entry       top(0, 0, Dir::Ref(OS::EDir, 0, std::string(root)));
         Entry       aggr;
 
         while(walk) {
@@ -138,14 +138,14 @@ public:
             if (aggr && !aggr.Label.IsAbove(ref))
                 Feed(std::move(aggr));
 
-            if (ref.type == Dir::EDir) {
+            if (ref.type == OS::EDir) {
                 if (ref.depth == cfg.edge) {
                     assert(!aggr);
 
                     aggr = Entry(0, 0, std::move(ref));
                 }
 
-            } else if (ref.type == Dir::EReg) {
+            } else if (ref.type == OS::EReg) {
                 OS::File file;
 
                 const auto path = Dir::Path(root).add(ref);
@@ -177,7 +177,7 @@ public:
                     }
                 }
 
-            } else if (ref.type == Dir::EAccess) {
+            } else if (ref.type == OS::EAccess) {
 
                 std::cerr << "cannot deep to " << ref.name << std::endl;
             }
