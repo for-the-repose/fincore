@@ -125,7 +125,7 @@ int do_stats(int argc, char *argv[])
     Top::Cfg    cfg;
 
     while (true) {
-        static const char opts[] = "f:d:r:l:zsi";
+        static const char opts[] = "f:d:r:l:c:zsi";
 
         const int opt = getopt(argc, argv, opts);
 
@@ -149,6 +149,9 @@ int do_stats(int argc, char *argv[])
         } else if (opt == 'l') {
             cfg.limit = std::stoull(optarg);
 
+        } else if (opt == 'c') {
+            cfg.raito = std::stod(optarg);
+
         } else if (opt == 'r') {
             const std::string rname(optarg);
 
@@ -170,10 +173,10 @@ int do_stats(int argc, char *argv[])
         std::cerr << "only one of -f or -i allowed" << std::endl;
 
     } else if (!path.empty()){
-        Top(cfg).Do(path);
+        Top(cfg.validate()).Do(path);
 
     } else if (input) {
-        Top(cfg).Do(std::cin);
+        Top(cfg.validate()).Do(std::cin);
 
     } else {
         std::cerr << "path to directory is not given" << std::endl;
@@ -207,6 +210,7 @@ void usage() noexcept
         << endl << "   -r kind    type of reduction: none, top"
         << endl << "   -l items   items limit for reduction"
         << endl << "   -s         collect root summary stats"
+        << endl << "   -c raito   cache filter raito for aggr"
         << endl;
 }
 

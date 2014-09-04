@@ -18,11 +18,21 @@ public:
             REDUCT_TOP      = 1
         };
 
+        const Cfg& validate()
+        {
+            using namespace std;
+
+            raito = min(1., max(0., raito));
+
+            return *this;
+        }
+
         unsigned    edge    = -1;
         bool        zeroes  = false;
         bool        summary = false;
         EReduct     reduct  = REDUCT_NONE;
         unsigned    limit   = 16;
+        double      raito   = 0.;
     };
 
     class Entry {
@@ -70,6 +80,15 @@ public:
             swap(Label, rval.Label);
 
             return *this;
+        }
+
+        double raito() const noexcept
+        {
+            if (Size == 0 || Size == Used) {
+                return 1.0;
+            } else {
+                return (double)Used / (double)Size;
+            }
         }
 
         size_t      Used    = 0;
@@ -176,7 +195,7 @@ protected:
                 if (file.size() > 0) {
                     auto map = file.mmap();
 
-                    Entry entry(((OS::MemRg)map).bytes, 0, std::move(ref));
+                    Entry entry(((OS::MemRg)map).paged(), 0, std::move(ref));
 
                     probe(map, [&](Utils::Span &span) { entry.Used += span.bytes;});
 
@@ -215,13 +234,17 @@ protected:
 
     void Feed(Entry entry)
     {
-        if (entry.Used > 0 || cfg.zeroes) {
-            if (reduct) {
-                reduct->push(std::move(entry));
+        if (entry.Used == 0 && !cfg.zeroes) {
+            /* ignore unsued entries        */
 
-            } else {
-                Print(entry);
-            }
+        } else if (entry.raito() < cfg.raito) {
+            /* ignore entries under edge    */
+
+        } else if (reduct) {
+            reduct->push(std::move(entry));
+
+        } else {
+            Print(entry);
         }
     }
 
