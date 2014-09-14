@@ -18,6 +18,7 @@
 class Monit {
 public:
     using Ticks = Utils::Ticks<>;
+    using Sampled = Stats::Parted<Parts::Equal>;
 
     class Cfg {
     public:
@@ -30,9 +31,11 @@ public:
 
     void Do(std::string &path)
     {
+        using namespace Stats;
+
         Probe probe;
 
-        Stats::Bands::Ref  was;
+        Sampled::Ref  was;
 
         for (Ticks ti(cfg.delay * 1000, cfg.count); ti();) {
             OS::File  file;
@@ -48,7 +51,9 @@ public:
 
             auto map = file.mmap();
 
-            Stats::Bands::Ref now(new Stats::Bands(map, 48));
+            const size_t bytes = ((const OS::MemRg&)map).paged();
+
+            Sampled::Ref now(new Sampled(bytes, 48));
 
             probe(map, [&](Utils::Span &span) { (*now)(span); });
 

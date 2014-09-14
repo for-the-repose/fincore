@@ -4,6 +4,7 @@
 #define H_FINCORE_BANDS
 
 #include <cassert>
+#include "parts.h"
 
 namespace Stats {
     class Band {
@@ -51,34 +52,11 @@ namespace Stats {
 
     class Bands {
     public:
-        using Ref = std::unique_ptr<Bands>;
         using Vec = std::vector<Band>;
 
-        Bands(const Utils::Gran &gran, size_t slots)
-            : limit(0), all(0, gran.paged())
+        Bands(size_t size, size_t slots) : all(0, size)
         {
-            const size_t bytes = gran.paged();
-
-            if (slots < bytes) {
-                limit = (bytes + slots - 1) / slots;
-
-                assert(limit > 1);
-
-            } else {
-                limit = 1;
-            }
-
-            size_t edge = limit * (bytes - slots * (limit - 1));
-
             bands.reserve(slots);
-
-            for (size_t off = 0; off < bytes;) {
-                bands.emplace_back(off, limit - bool(off >= edge));
-
-                off += bands.back().limit;
-            }
-
-            assert(bands.back().after() == bytes);
         }
 
         operator const Vec&() const noexcept {
@@ -95,6 +73,37 @@ namespace Stats {
 
         size_t size() const noexcept {
             return bands.size();
+        }
+
+    protected:
+        void accum(Utils::Span span) noexcept
+        {
+            all.inc(span);
+
+            assert(!span);
+        }
+
+        Band        all;
+        Vec         bands;
+    };
+
+    template<template<typename Fwd> class  Algo>
+    class Parted : public Bands {
+    public:
+        using Ref = std::unique_ptr<Parted<Algo>>;
+        using Iter = Parts::Range::const_iterator;
+
+        Parted(size_t size, size_t slots) : Bands(size, slots)
+        {
+            using namespace Parts;
+
+            auto make = [&](size_t z, Iter &at, Iter &end) {
+                bands.emplace_back(at, end - at);
+            };
+
+            limit = Algo<Range>(Range(0, size), slots)(make);
+
+            assert(size == bands.back().after());
         }
 
         void operator()(Utils::Span &span) noexcept
@@ -120,16 +129,7 @@ namespace Stats {
         }
 
     protected:
-        void accum(Utils::Span span) noexcept
-        {
-            all.inc(span);
-
-            assert(!span);
-        }
-
-        size_t      limit;
-        Band        all;
-        Vec         bands;
+        size_t      limit = 0;
     };
 }
 
