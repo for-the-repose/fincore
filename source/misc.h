@@ -34,6 +34,37 @@ namespace Misc {
 
         return 6;
     }
-}
 
+    constexpr size_t DivUp(size_t value, size_t gran) noexcept {
+        return (value + gran - 1) / gran;
+    }
+
+    constexpr size_t GranDown(size_t value, size_t gran) noexcept {
+        return (value / gran) * gran;
+    }
+
+    constexpr size_t GranUp(size_t value, size_t gran) noexcept {
+        return DivUp(value, gran) * gran;
+    }
+
+    size_t Gran2Up(size_t value) noexcept
+    {
+        if (value > 0) {
+            value--;
+
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value |= value >> 32;
+        }
+
+        return value;
+    }
+
+    size_t Gran2Down(size_t value) noexcept {
+        return (Gran2Up(value) >> 1) + 1;
+    }
+}
 #endif/*H_FINCORE_MISC*/
