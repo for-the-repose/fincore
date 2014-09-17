@@ -9,8 +9,6 @@ namespace Humans {
 
     std::string Value(size_t value)
     {
-        using namespace Utils;
-
         if (value < Misc::Pow10(3)) {
             return std::to_string(value);
 

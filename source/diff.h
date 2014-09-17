@@ -35,7 +35,7 @@ namespace Stats {
 
         static double diff(const Band &one, const Band &two) noexcept
         {
-            double diff = Utils::Misc::Diff(one.value, two.value);
+            double diff = Misc::Diff(one.value, two.value);
             size_t total = one.limit + two.limit;
 
             return total > 0 ? (2 * diff / total) : 0;

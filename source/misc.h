@@ -3,39 +3,36 @@
 #ifndef H_FINCORE_MISC
 #define H_FINCORE_MISC
 
-namespace Utils {
+namespace Misc {
+    template<typename Val>
+    Val Diff(const Val &one, const Val &two) {
+        return std::max(one, two) - std::min(one, two);
+    }
 
-    namespace Misc {
-        template<typename Val>
-        Val Diff(const Val &one, const Val &two) {
-            return std::max(one, two) - std::min(one, two);
-        }
+    constexpr size_t Pow10(unsigned xval) {
+        return xval < 1 ? 1 : 10 * Pow10(xval - 1);
+    }
 
-        constexpr size_t Pow10(unsigned xval) {
-            return xval < 1 ? 1 : 10 * Pow10(xval - 1);
-        }
+    constexpr size_t Pow2(unsigned xval) {
+        return 1ll << xval;
+    }
 
-        constexpr size_t Pow2(unsigned xval) {
-            return 1ll << xval;
-        }
+    unsigned Log1000(size_t val)
+    {
+        if (val < Pow10(3))
+            return 0;
+        if (val < Pow10(6))
+            return 1;
+        if (val < Pow10(9))
+            return 2;
+        if (val < Pow10(12))
+            return 3;
+        if (val < Pow10(15))
+            return 4;
+        if (val < Pow10(18))
+            return 5;
 
-        unsigned Log1000(size_t val)
-        {
-            if (val < Pow10(3))
-                return 0;
-            if (val < Pow10(6))
-                return 1;
-            if (val < Pow10(9))
-                return 2;
-            if (val < Pow10(12))
-                return 3;
-            if (val < Pow10(15))
-                return 4;
-            if (val < Pow10(18))
-                return 5;
-
-            return 6;
-        }
+        return 6;
     }
 }
 
