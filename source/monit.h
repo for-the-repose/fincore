@@ -14,26 +14,28 @@
 #include "diff.h"
 #include "print.h"
 #include "ticks.h"
+#include "parts.h"
 
 class Monit {
 public:
     using Ticks = Utils::Ticks<>;
-    using Sampled = Stats::Parted<Parts::Equal>;
+    using Sampled = Stats::Parted<Parts::Tailed>;
 
     class Cfg {
     public:
         unsigned    delay   = 0;
         size_t      count   = 1;
         float       thresh  = 0.1;
+        unsigned    bands   = 48;
+        unsigned    subs    = 8192;
     };
 
     Monit(const Cfg &cfg_) : cfg(cfg_) { }
 
     void Do(std::string &path)
     {
-        using namespace Stats;
-
         Probe probe;
+        Parts::Scale scale(cfg.subs);
 
         Sampled::Ref  was;
 
@@ -53,14 +55,18 @@ public:
 
             const size_t bytes = ((const OS::MemRg&)map).paged();
 
-            Sampled::Ref now(new Sampled(bytes, 48));
+            Sampled::Ref now(new Sampled(bytes, scale(bytes)));
 
             probe(map, [&](Utils::Span &span) { (*now)(span); });
 
-            if (!was.get() || Stats::Diff()(*was, *now) > cfg.thresh) {
+            if (!was || Stats::Diff()(*was, *now) > cfg.thresh) {
                 was.reset(now.release());
 
-                std::cout << Stamp() << " " << Stats::Print(*was) << std::endl;
+                std::cout
+                    << Stamp()
+                    << " "
+                    << Stats::Print(*was, cfg.bands)
+                    << std::endl;
             }
         }
     }

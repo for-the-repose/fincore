@@ -198,6 +198,7 @@ void usage() noexcept
         << endl << "   -c count   how many snaps make"
         << endl << "   -d gran    time granulation, secs"
         << endl << "   -r float   refresh changes threshold"
+        << endl << "   -s sampl   minimal samples bands"
         << endl
         << endl << " Options for evict"
         << endl << "   -f path    path to file for evicting"
