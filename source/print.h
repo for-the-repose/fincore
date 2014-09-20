@@ -8,11 +8,17 @@
 #include <iomanip>
 
 #include "humans.h"
+#include "parts.h"
 
 namespace Stats {
     class Print {
     public:
-        Print(const Bands &bands_) : bands(bands_) { }
+        using Iter = Bands::Vec::const_iterator;
+
+        Print(const Bands &bands_, size_t slots_ = 0) : bands(bands_)
+        {
+            slots = slots_ > 0 ? slots_ : bands.size();
+        }
 
         std::ostream& operator()(std::ostream &os) const noexcept
         {
@@ -27,17 +33,29 @@ namespace Stats {
             return os;
         }
 
-        static std::string Dots(const Bands::Vec &vec) noexcept
+        std::string Dots(const Bands::Vec &vec) const noexcept
         {
             std::string dots;
 
-            dots.reserve(vec.size());
+            dots.reserve(slots);
 
-            for (const auto &band: vec) {
+            auto put = [&](size_t z, Iter at, Iter end)
+            {
+                Band aggr(0, 0);
+
+                for (; at != end; at++) {
+                    aggr.limit += at->limit;
+                    aggr.value += at->value;
+                }
+
                 const char syms[] = ".,~0123456789+";
 
-                dots.append(1, syms[Class_0_13(band)]);
-            }
+                dots.append(1, syms[Class_0_13(aggr)]);
+            };
+
+            Parts::Equal<Bands::Vec>(vec, slots)(put);
+
+            assert(dots.size() == slots);
 
             return dots;
         }
@@ -64,7 +82,9 @@ namespace Stats {
                 }
             }
         }
+
     protected:
+        size_t          slots;
         const Bands     &bands;
     };
 
