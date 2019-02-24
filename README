@@ -1,6 +1,31 @@
-usage:
+Files caching analysis tool based on mincore call
 
-fincore -c 1000 -d 1 -r 0.1 -f path_to_some_file
+Usage : fincore mode [ ARGS ] ...
+
+ Options for trace
+   -f path    Path to file for tracing
+   -c count   How many snaps make
+   -d gran    Time granulation, secs
+   -r float   Refresh changes threshold
+   -s sampl   Minimal samples bands
+
+ Options for evict
+   -f path    Path to file for evicting
+
+ Options for stats
+   -f path    Path to directory for stats
+   -i         Read path names from stdin
+   -d depth   Depth detalization limit
+   -z         Show entries with zero usage
+   -r kind    Type of reduction: none, top
+   -l items   Items limit for reduction
+   -s         Collect root summary stats
+   -c raito   Cache filter raito for aggr
+
+
+Trace mode shows short map of cached pages for a single file
+
+$ fincore -c 1000 -d 1 -r 0.1 -f path_to_some_file
 
 2014-08-11 00:08:39  1% [0.~.~.......~~0~.~~01000~~.0.~1~~..~.~.~~..~~~~~]
 2014-08-11 00:10:59  0% [................................................]
@@ -11,13 +36,29 @@ fincore -c 1000 -d 1 -r 0.1 -f path_to_some_file
 2014-08-11 00:11:48  1% [0.~.~.......~~~~.~~01000~~.0..1~0~.....~.......~]
 2014-08-11 00:11:59  1% [0.~.~.......~~0~.~~01000~~.0..1~0~.....~.......~]
 
+Symbols region description:
+    .   uncached data
+    ,   less than 0.1 % pages cached
+    ~   less than 1.0 % pages cached
+    0   [1, 10) percents cached
+    1   [10, 20) percents cached
+    ...
+    9   [90, 100) percents cached
+    +   all data are cached
 
-symbols region description:
-	.	uncached data
-    ,   less than 0.1 % cached
-	~	less than 1.0 % cached
-	0	[1, 10) percents cached
-	1	[10, 20) percents cached
-	...
-	9	[90, 100) percetns cached
-	+	all data cached
+Stats mode collects cache stats for a set of files
+
+$ fincore stats -f /some/path -s -r top
+
+12.9M of 7.13G  0 :summary
+2.92M of 2.92M  1 3c8a037070de926448386d913a2e3378.data
+2.88M of 2.88M  1 3cd103de036c9a27b8d7d9282d62db33.data
+2.32M of 2.32M  1 41db756a5ec691208e74f8df7e9c0105.data
+1.42M of 2.84M  1 41263a98007e62935374404b853038b6.data
+1.08M of 1.17M  1 417705273a87a37a2660e3f0b51ad4c1.data
+901.K of 901.K  1 3c4a7ba4036202012fd68837bd6a16f9.data
+888.K of 888.K  1 3d986c2e6ddc385c3490d8bcb58a8e71.data
+561.K of 561.K  1 3db207a4b42e14850253858112fb9100.data
+376.K of 507.K  1 40927de25a51a4097f746a78c930c659.data
+339.K of 339.K  1 3d3428ed80ab70b749b0b117a067e57a.data
+

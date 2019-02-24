@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_DIFF
 #define H_FINCORE_DIFF
@@ -26,7 +26,6 @@ namespace Stats {
             double accum = 0;
 
             for (size_t z = 0; z < one.size(); z++) {
-
                 accum += Diff::diff(one[z], two[z]);
             }
 

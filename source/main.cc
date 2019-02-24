@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #include <string>
 
@@ -24,13 +24,10 @@ int main(int argc, char *argv[])
 
         if (mod == "trace") {
             return do_trace(argc--, argv++);
-
         } else if (mod == "evict") {
             return do_evict(argc--, argv++);
-
         } else if (mod == "stats") {
             return do_stats(argc--, argv++);
-
         } else {
             std::cerr << "unknown mode " << mod << std::endl;
 
@@ -58,13 +55,10 @@ int do_trace(int argc, char *argv[])
 
         if (opt == 'f') {
             path = optarg;
-
         } else if (opt == 'd') {
             cfg.delay = std::stoull(optarg);
-
         } else if (opt == 'c') {
             cfg.count = std::stoull(optarg);
-
         } else if (opt == 'r') {
             cfg.thresh = std::stod(optarg);
         }
@@ -133,34 +127,25 @@ int do_stats(int argc, char *argv[])
 
         if (opt == 'f') {
             path = optarg;
-
         } else if (opt == 'i') {
             input = true;
-
         } else if (opt == 'd') {
             cfg.edge = std::stoull(optarg);
-
         } else if (opt == 'z') {
             cfg.zeroes = true;
-
         } else if (opt == 's') {
             cfg.summary = true;
-
         } else if (opt == 'l') {
             cfg.limit = std::stoull(optarg);
-
         } else if (opt == 'c') {
             cfg.raito = std::stod(optarg);
-
         } else if (opt == 'r') {
             const std::string rname(optarg);
 
             if (rname == "none") {
                 cfg.reduct = Top::Cfg::REDUCT_NONE;
-
             } else if (rname == "top") {
                 cfg.reduct = Top::Cfg::REDUCT_TOP;
-
             } else {
                 std::cerr << "unknown reductor " << rname << std::endl;
 
@@ -171,13 +156,10 @@ int do_stats(int argc, char *argv[])
 
     if (!path.empty() && input) {
         std::cerr << "only one of -f or -i allowed" << std::endl;
-
     } else if (!path.empty()){
         Top(cfg.validate()).Do(path);
-
     } else if (input) {
         Top(cfg.validate()).Do(std::cin);
-
     } else {
         std::cerr << "path to directory is not given" << std::endl;
     }
@@ -188,30 +170,28 @@ int do_stats(int argc, char *argv[])
 
 void usage() noexcept
 {
-    using namespace std;
-
-    cerr
+    std::cerr
         << "fincore mode [ ARGS ] ..."
-        << endl
-        << endl << " Options for trace"
-        << endl << "   -f path    path to file for tracing"
-        << endl << "   -c count   how many snaps make"
-        << endl << "   -d gran    time granulation, secs"
-        << endl << "   -r float   refresh changes threshold"
-        << endl << "   -s sampl   minimal samples bands"
-        << endl
-        << endl << " Options for evict"
-        << endl << "   -f path    path to file for evicting"
-        << endl
-        << endl << " Options for stats"
-        << endl << "   -f path    path to directory for stats"
-        << endl << "   -i         read path names from stdin"
-        << endl << "   -d depth   depth detalization limit"
-        << endl << "   -z         show entries with zero usage"
-        << endl << "   -r kind    type of reduction: none, top"
-        << endl << "   -l items   items limit for reduction"
-        << endl << "   -s         collect root summary stats"
-        << endl << "   -c raito   cache filter raito for aggr"
-        << endl;
+        << "\n"
+        << "\n Options for trace"
+        << "\n   -f path    Path to file for tracing"
+        << "\n   -c count   How many snaps make"
+        << "\n   -d gran    Time granulation, secs"
+        << "\n   -r float   Refresh changes threshold"
+        << "\n   -s sampl   Minimal samples bands"
+        << "\n"
+        << "\n Options for evict"
+        << "\n   -f path    Path to file for evicting"
+        << "\n"
+        << "\n Options for stats"
+        << "\n   -f path    Path to directory for stats"
+        << "\n   -i         Read path names from stdin"
+        << "\n   -d depth   Depth detalization limit"
+        << "\n   -z         Show entries with zero usage"
+        << "\n   -r kind    Type of reduction: none, top"
+        << "\n   -l items   Items limit for reduction"
+        << "\n   -s         Collect root summary stats"
+        << "\n   -c raito   Cache filter raito for aggr"
+        << std::endl;
 }
 

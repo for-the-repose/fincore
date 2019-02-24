@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_TICKS
 #define H_FINCORE_TICKS
@@ -41,7 +41,6 @@ namespace Utils {
 
                 if (count == 2) {
                     spent(Pass::zero(), (now - start).count());
-
                 } else {
                     spent(decay, (now - start).count());
                 }
@@ -72,8 +71,8 @@ namespace Utils {
         }
 
     protected:
-        unsigned        count   = 0;
-        unsigned        cycles;
+        unsigned        count  = 0;
+        unsigned        cycles = 0;
         Stamp           stamp;
         Stamp           start;
         Times           tick;

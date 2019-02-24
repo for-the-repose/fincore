@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_ERROR
 #define H_FINCORE_ERROR

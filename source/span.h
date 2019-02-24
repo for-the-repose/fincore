@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_SPAN
 #define H_FINCORE_SPAN
@@ -6,12 +6,12 @@
 namespace Utils {
     class Span {
     public:
+        Span() noexcept : Span(0, 0) { }
+
         Span(size_t at_, size_t bytes_) noexcept
             : at(at_), bytes(bytes_) { }
 
-        Span() noexcept : Span(0, 0) { }
-
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return bytes > 0;
         }
 
@@ -40,8 +40,8 @@ namespace Utils {
             return false;
         }
 
-        size_t      at;
-        size_t      bytes;
+        size_t at = 0;
+        size_t bytes = 0;
     };
 
     class Gran : public Span {
@@ -62,10 +62,10 @@ namespace Utils {
         }
 
     protected:
-        unsigned    page;
+        unsigned    page = 0;
     };
 
-    void swap(Span &left, Span &right)
+    void swap(Span &left, Span &right) noexcept
     {
         std::swap(left.at,    right.at);
         std::swap(left.bytes, right.bytes);

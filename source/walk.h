@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_WALK
 #define H_FINCORE_WALK
@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 #include <sstream>
+#include <utility>
 #include <list>
 #include "span.h"
 
@@ -14,19 +15,19 @@ namespace Utils {
     namespace Dir {
         class Ref {
         public:
-            Ref() : type(OS::EInvalid), depth(0) { }
+            Ref() = default;
 
             Ref(Ref &&ref) : type(ref.type), depth(ref.depth) {
                 name = std::move(ref.name);
             }
 
-            Ref(OS::FType type_, unsigned depth_, std::string && name_)
+            Ref(OS::FType type_, unsigned depth_, std::string name_)
                 : type(type_), depth(depth_), name(name_)
             {
                 assert(type != OS::EInvalid);
             }
 
-            operator bool() const noexcept {
+            explicit operator bool() const noexcept {
                 return type != OS::EInvalid;
             }
 
@@ -34,8 +35,8 @@ namespace Utils {
                 return depth < ref.depth;
             }
 
-            OS::FType       type;
-            unsigned        depth;
+            OS::FType       type = OS::EInvalid;
+            unsigned        depth = 0;
             std::string     name;
         };
 
@@ -48,9 +49,9 @@ namespace Utils {
 
         class Path {
         public:
-            Path() : level(0) { }
+            Path() = default;
 
-            Path(const std::string &base) : Path() {
+            Path(const std::string &base) {
                 if (!base.empty()) add(base);
             }
 
@@ -72,45 +73,38 @@ namespace Utils {
                 return path;
             }
 
-            operator std::string&() && noexcept {
-                return path;
-            }
-
         private:
-            size_t          level;
+            size_t          level = 0;
             std::string     path;
         };
 
         class Enum {
         public:
             virtual ~Enum() noexcept { }
-            virtual operator bool() const noexcept = 0;
+            virtual explicit operator bool() const noexcept = 0;
             virtual Ref next() = 0;
         };
 
         class Iter {
         public:
-            Iter() : stream(nullptr) { }
-
+            Iter() = default;
             Iter(const Iter&) = delete;
 
             Iter(Iter &&iter) {
                 std::swap(stream, iter.stream);
             }
 
-            Iter(const std::string &path) : Iter()
+            Iter(const std::string &path)
             {
-                stream = opendir(path.c_str());
-
-                if (stream == nullptr)
+                if (!(stream = opendir(path.c_str())))
                     throw Error("Cannot open directory");
             }
 
-            ~Iter() noexcept {
+            ~Iter() {
                 close();
             }
 
-            operator bool() const noexcept {
+            explicit operator bool() const noexcept {
                 return stream != nullptr;
             }
 
@@ -120,50 +114,43 @@ namespace Utils {
 
             Ref next()
             {
-                while(*this) {
-                    struct dirent *entry = readdir(stream);
-
-                    if (entry != nullptr) {
+                while (*this) {
+                    if (struct dirent *entry = readdir(stream)) {
                         auto name = std::string(entry->d_name);
 
                         if (name == ".." || name == ".")
                             continue;
 
-                        OS::FType type = OS::EOther;
+                        auto type = OS::EOther;
 
                         if (entry->d_type == DT_REG) {
                             type = OS::EReg;
-
                         } else if (entry->d_type == DT_DIR) {
                             type = OS::EDir;
-
                         } else if (entry->d_type == DT_LNK) {
                             type = OS::ELink;
-
                         } else if (entry->d_type == DT_UNKNOWN) {
 
                         }
 
-                        return Ref(type, 0, std::move(name));
+                        return { type, 0, std::move(name) };
 
                     } else
                         close();
                 }
 
-                return Ref();
+                return { };
             }
 
         protected:
             void close() noexcept
             {
-                if (stream) {
-                    closedir(stream);
-
-                    stream = nullptr;
+                if (auto *was = std::exchange(stream, nullptr)) {
+                    closedir(was);
                 }
             }
 
-            DIR     *stream;
+            DIR *stream = nullptr;
         };
 
         class Level {
@@ -185,7 +172,7 @@ namespace Utils {
                 deep(path);
             }
 
-            operator bool() const noexcept override {
+            explicit operator bool() const noexcept override {
                 return !stack.empty();
             }
 
@@ -195,37 +182,34 @@ namespace Utils {
                     Level &level = stack.back();
 
                     Ref label = level.iter.next();
-                    auto depth = stack.size();
+                    unsigned depth = stack.size();
 
                     if (!label) {
                         stack.pop_back();
-
                     } else if (label.type == OS::EDir) {
                         try {
                             deep(label.name);
 
-                            return Ref(OS::EDir, depth, trace(false));
+                            return { OS::EDir, depth, trace(false) };
 
                         } catch (Error &error) {
-
-                            return Ref(OS::EAccess, depth, trace(false));
+                            return { OS::EAccess, depth, trace(false) };
                         }
 
                     } else {
                         auto path = trace(false).add(label);
 
-                        return Ref(label.type, depth, path);
+                        return { label.type, depth, path };
                     }
                 }
 
-                return Ref();
+                return { };
             }
 
         protected:
             void deep(const std::string &name)
             {
                 stack.emplace_back(name);
-
                 stack.back().open(trace(true));
             }
 
@@ -243,19 +227,14 @@ namespace Utils {
             }
 
         private:
-            using Stack = std::list<Level>;
-
-            Stack       stack;
+            std::list<Level> stack;
         };
 
         class List : public Enum {
         public:
-            List(std::istream &in_) : in(in_)
-            {
+            List(std::istream &in_) : in(in_) { }
 
-            }
-
-            operator bool() const noexcept override {
+            explicit operator bool() const noexcept override {
                 return in || !refs.empty();
             }
 
@@ -273,11 +252,11 @@ namespace Utils {
 
                         refs.pop_front();
 
-                        return std::move(ref);
+                        return ref;
                     }
                 }
 
-                return Ref();
+                return { };
             }
 
         protected:
@@ -295,14 +274,11 @@ namespace Utils {
                 OS::Stat info(stack);
 
                 if (info.type != OS::EDir) {
-
                     edge = depth;
                 }
 
                 if (info.type != OS::EInvalid) {
-                    using namespace std;
-
-                    refs.emplace_back(info.type, depth, move(string(stack)));
+                    refs.emplace_back(info.type, depth, std::string(stack));
                 }
             }
 
@@ -310,7 +286,6 @@ namespace Utils {
             {
                 if (!check(path)) {
                     /* TODO: collect stats  */
-
                 } else {
                     Slice on, to;
 
@@ -365,10 +340,8 @@ namespace Utils {
 
                     if (end == path.npos) {
                         return Slice(at, path.size() - at);
-
                     } else if (end == at) {
                         at++;
-
                     } else {
                         return Slice(at, end - at);
                     }
@@ -387,14 +360,12 @@ namespace Utils {
                 return stack.compare(on, on.bytes, by, to, to.bytes) == 0;
             }
 
-            using Keep = std::list<Ref>;
-
             bool            first       = true;
             bool            relative    = false;
             size_t          edge        = -1;
             std::istream    &in;
             std::string     stack;
-            Keep            refs;
+            std::list<Ref>  refs;
         };
     }
 }

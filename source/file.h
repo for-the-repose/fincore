@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_FILE
 #define H_FINCORE_FILE
@@ -40,7 +40,7 @@ namespace OS {
     public:
         using Gran::Gran;
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return bytes > 0 && at != 0;
         }
 
@@ -57,15 +57,14 @@ namespace OS {
     public:
         using Span = Utils::Span;
 
-        Mapped() noexcept : ptr(nullptr) { }
-
+        Mapped() noexcept { }
         Mapped(const Mapped&) = delete;
 
-        Mapped(Mapped &&mapped) noexcept : Mapped() {
+        Mapped(Mapped &&mapped) noexcept {
             *this = std::move(mapped);
         }
 
-        Mapped(int fd, const Span &span_) : ptr(nullptr), span(span_)
+        Mapped(int fd, const Span &span_) : span(span_)
         {
             ptr = ::mmap(nullptr, span.bytes, PROT_NONE, MAP_SHARED, fd, span.at);
 
@@ -75,14 +74,12 @@ namespace OS {
 
         ~Mapped()
         {
-            if (ptr) {
-                ::munmap(ptr, span.bytes);
-
-                ptr = nullptr;
+            if (auto *was = std::exchange(ptr, nullptr)) {
+                ::munmap(was, span.bytes);
             }
         }
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return ptr != nullptr;
         }
 
@@ -90,10 +87,8 @@ namespace OS {
 
         Mapped& operator=(Mapped &&mapped) noexcept
         {
-            using namespace std;
-
-            swap(ptr, mapped.ptr);
-            swap(span, mapped.span);
+            std::swap(ptr, mapped.ptr);
+            std::swap(span, mapped.span);
 
             return *this;
         }
@@ -106,19 +101,17 @@ namespace OS {
         }
 
     protected:
-        void        *ptr;
+        void        *ptr = nullptr;
         Span        span;
     };
 
     class File {
     public:
-        File() : fd(-1)  { }
+        File() = default;
 
-        File(const std::string &path) : File()
+        File(const std::string &path)
         {
-            fd = ::open(path.data(), O_RDONLY);
-
-            if (fd < 0)
+            if ((fd = ::open(path.data(), O_RDONLY)) < 0)
                 throw Error("cannot open file");
         }
 
@@ -126,9 +119,9 @@ namespace OS {
             close();
         }
 
-        File& operator=(const File &file) = delete;
+        File& operator=(const File&) = delete;
 
-        File& operator=(File &&file)
+        File& operator=(File && file)
         {
             close();
 
@@ -137,7 +130,7 @@ namespace OS {
             return *this;
         }
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return fd > -1;
         }
 
@@ -147,14 +140,10 @@ namespace OS {
 
         void close() noexcept
         {
-            if (*this) {
-                ::close(fd);
-
-                fd = -1;
-            }
+            if (*this) ::close(fd), fd = -1;
         }
 
-        size_t size() const throw()
+        size_t size() const noexcept
         {
             off_t was = ::lseek(fd, 0, SEEK_CUR);
             off_t size = ::lseek(fd, 0, SEEK_END);
@@ -178,7 +167,7 @@ namespace OS {
         }
 
     private:
-        int         fd;
+        int fd = -1;
     };
 
     class Stat {
@@ -189,7 +178,6 @@ namespace OS {
 
             if (lstat(path.c_str(), &st) == 0) {
                 feed(st);
-
             } else if (errno == EACCES) {
                 type = EAccess;
             }

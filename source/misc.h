@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_MISC
 #define H_FINCORE_MISC
@@ -17,20 +17,14 @@ namespace Misc {
         return 1ll << xval;
     }
 
-    unsigned Log1000(size_t val)
+    unsigned Log1000(size_t val) noexcept
     {
-        if (val < Pow10(3))
-            return 0;
-        if (val < Pow10(6))
-            return 1;
-        if (val < Pow10(9))
-            return 2;
-        if (val < Pow10(12))
-            return 3;
-        if (val < Pow10(15))
-            return 4;
-        if (val < Pow10(18))
-            return 5;
+        if (val < Pow10(3))  return 0;
+        if (val < Pow10(6))  return 1;
+        if (val < Pow10(9))  return 2;
+        if (val < Pow10(12)) return 3;
+        if (val < Pow10(15)) return 4;
+        if (val < Pow10(18)) return 5;
 
         return 6;
     }

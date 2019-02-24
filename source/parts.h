@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_PARTS
 #define H_FINCORE_PARTS
@@ -46,28 +46,22 @@ namespace Parts {
             }
 
             Iter& operator+=(size_t inc) noexcept {
-                at += inc;
-
-                return *this;
+                return at += inc, *this;
             }
 
             Iter& operator++() noexcept {
-                at++;
-
-                return *this;
+                return at++, *this;
             }
 
             Iter operator++(int) noexcept {
-                at++;
-
-                return *this;
+                return at++, *this;
             }
 
         protected:
             size_t      at;
         };
 
-        Range(size_t length) : start(0), stop(length) { }
+        Range(size_t length) : Range(0, length) { }
 
         Range(size_t start_, size_t stop_)
             : start(start_), stop(stop_) { }
@@ -85,8 +79,8 @@ namespace Parts {
         }
 
     protected:
-        size_t      start;
-        size_t      stop;
+        size_t start = 0;
+        size_t stop = 0;
     };
 
     template<typename Fwd, typename Above> class Base_ {
@@ -157,7 +151,7 @@ namespace Parts {
         }
 
     protected:
-        size_t      edge;
+        size_t edge = 0;
     };
 }
 

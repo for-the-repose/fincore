@@ -1,16 +1,17 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_BANDS
 #define H_FINCORE_BANDS
 
 #include <cassert>
+#include <vector>
 #include "parts.h"
 
 namespace Stats {
     class Band {
     public:
         Band(size_t at_, size_t limit_)
-                : at(at_), limit(limit_), value(0) { }
+                : at(at_), limit(limit_) { }
 
         bool operator ==(size_t offset) const noexcept {
             return offset >= at && offset < after();
@@ -45,9 +46,9 @@ namespace Stats {
             }
         }
 
-        size_t      at;
-        size_t      limit;
-        size_t      value;
+        size_t      at = 0;
+        size_t      limit = 0;
+        size_t      value = 0;
     };
 
     class Bands {
@@ -120,7 +121,6 @@ namespace Stats {
                 it = std::find(it, bands.end(), span.at);
 
                 for (; span && it != bands.end(); it++) {
-
                     it->inc(span);
                 }
             }

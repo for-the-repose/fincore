@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_PRINT
 #define H_FINCORE_PRINT
@@ -64,19 +64,15 @@ namespace Stats {
         {
             if (band.empty()) {
                 return 0;
-
             } else if (band.full()) {
                 return 13;
-
             } else {
                 const double fill = band.usage();
 
                 if (fill < 0.001) {
                     return 1;
-
                 } else if (fill  < 0.01) {
                     return 2;
-
                 } else {
                     return 3 + int(fill * 10);
                 }
@@ -84,7 +80,7 @@ namespace Stats {
         }
 
     protected:
-        size_t          slots;
+        size_t          slots = 0;
         const Bands     &bands;
     };
 

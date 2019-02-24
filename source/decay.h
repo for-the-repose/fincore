@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_DECAY
 #define H_FINCORE_DECAY
@@ -11,8 +11,6 @@ namespace Decay {
     template<typename Times>
     class Cfg {
     public:
-        Cfg() : depth(0) { }
-
         Cfg(Times depth_) : depth(depth_) { }
 
         double operator()(Times delta) const noexcept
@@ -26,7 +24,7 @@ namespace Decay {
             return 0;
         }
 
-        Times       depth;
+        Times depth{ 0 };
     };
 
     class Value {
@@ -45,7 +43,7 @@ namespace Decay {
         }
 
     protected:
-        double      state = 0;
+        double state = 0;
     };
 }
 

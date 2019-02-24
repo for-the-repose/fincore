@@ -1,4 +1,4 @@
-/*__ GPL 3.0, 2014 Alexander Soloviev (no.friday@yandex.ru) */
+/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #ifndef H_FINCORE_HUMANS
 #define H_FINCORE_HUMANS
@@ -11,7 +11,6 @@ namespace Humans {
     {
         if (value < Misc::Pow10(3)) {
             return std::to_string(value);
-
         } else {
             const char *scale[] = { "", "K", "M", "G", "T", "P", "E", "Z" };
 
