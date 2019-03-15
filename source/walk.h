@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_WALK
-#define H_FINCORE_WALK
+#pragma once
 
 #include <dirent.h>
 #include <sys/types.h>
@@ -11,31 +10,30 @@
 #include <list>
 #include "span.h"
 
-namespace Utils {
-    namespace Dir {
-        class Ref {
-        public:
+namespace NUtils {
+    namespace NDir {
+        struct Ref {
             Ref() = default;
 
             Ref(Ref &&ref) : type(ref.type), depth(ref.depth) {
                 name = std::move(ref.name);
             }
 
-            Ref(OS::FType type_, unsigned depth_, std::string name_)
+            Ref(NOs::FType type_, unsigned depth_, std::string name_)
                 : type(type_), depth(depth_), name(name_)
             {
-                assert(type != OS::EInvalid);
+                assert(type != NOs::EInvalid);
             }
 
             explicit operator bool() const noexcept {
-                return type != OS::EInvalid;
+                return type != NOs::EInvalid;
             }
 
             bool IsAbove(const Ref &ref) const noexcept {
                 return depth < ref.depth;
             }
 
-            OS::FType       type = OS::EInvalid;
+            NOs::FType       type = NOs::EInvalid;
             unsigned        depth = 0;
             std::string     name;
         };
@@ -47,19 +45,19 @@ namespace Utils {
             std::swap(left.name, right.name);
         }
 
-        class Path {
+        class TPath {
         public:
-            Path() = default;
+            TPath() = default;
 
-            Path(const std::string &base) {
+            TPath(const std::string &base) {
                 if (!base.empty()) add(base);
             }
 
-            Path& add(const Ref &ref) {
+            TPath& add(const Ref &ref) {
                 return add(ref.name);
             }
 
-            Path& add(const std::string &name)
+            TPath& add(const std::string &name)
             {
                 if (level++ > 0)
                     path.append(1, '/');
@@ -78,29 +76,28 @@ namespace Utils {
             std::string     path;
         };
 
-        class Enum {
-        public:
-            virtual ~Enum() noexcept { }
+        struct IEnum {
+            virtual ~IEnum() noexcept { }
             virtual explicit operator bool() const noexcept = 0;
             virtual Ref next() = 0;
         };
 
-        class Iter {
+        class TIter {
         public:
-            Iter() = default;
-            Iter(const Iter&) = delete;
+            TIter() = default;
+            TIter(const TIter&) = delete;
 
-            Iter(Iter &&iter) {
+            TIter(TIter &&iter) {
                 std::swap(stream, iter.stream);
             }
 
-            Iter(const std::string &path)
+            TIter(const std::string &path)
             {
                 if (!(stream = opendir(path.c_str())))
-                    throw Error("Cannot open directory");
+                    throw TError("Cannot open directory");
             }
 
-            ~Iter() {
+            ~TIter() {
                 close();
             }
 
@@ -108,7 +105,7 @@ namespace Utils {
                 return stream != nullptr;
             }
 
-            void operator =(Iter &&iter) noexcept {
+            void operator =(TIter &&iter) noexcept {
                 std::swap(stream, iter.stream);
             }
 
@@ -121,14 +118,14 @@ namespace Utils {
                         if (name == ".." || name == ".")
                             continue;
 
-                        auto type = OS::EOther;
+                        auto type = NOs::EOther;
 
                         if (entry->d_type == DT_REG) {
-                            type = OS::EReg;
+                            type = NOs::EReg;
                         } else if (entry->d_type == DT_DIR) {
-                            type = OS::EDir;
+                            type = NOs::EDir;
                         } else if (entry->d_type == DT_LNK) {
-                            type = OS::ELink;
+                            type = NOs::ELink;
                         } else if (entry->d_type == DT_UNKNOWN) {
 
                         }
@@ -153,22 +150,22 @@ namespace Utils {
             DIR *stream = nullptr;
         };
 
-        class Level {
+        class TLevel {
         public:
-            Level(const std::string &name_) : name(name_) { }
+            TLevel(const std::string &name_) : name(name_) { }
 
             void open(const std::string &path)
             {
-                iter = Iter(path);
+                iter = TIter(path);
             }
 
             std::string name;
-            Iter        iter;
+            TIter       iter;
         };
 
-        class Walk : public Enum {
+        class TWalk : public IEnum {
         public:
-            Walk(const std::string &path) {
+            TWalk(const std::string &path) {
                 deep(path);
             }
 
@@ -179,21 +176,21 @@ namespace Utils {
             Ref next() override
             {
                 while (!stack.empty()) {
-                    Level &level = stack.back();
+                    TLevel &level = stack.back();
 
                     Ref label = level.iter.next();
                     unsigned depth = stack.size();
 
                     if (!label) {
                         stack.pop_back();
-                    } else if (label.type == OS::EDir) {
+                    } else if (label.type == NOs::EDir) {
                         try {
                             deep(label.name);
 
-                            return { OS::EDir, depth, trace(false) };
+                            return { NOs::EDir, depth, trace(false) };
 
-                        } catch (Error &error) {
-                            return { OS::EAccess, depth, trace(false) };
+                        } catch (TError &error) {
+                            return { NOs::EAccess, depth, trace(false) };
                         }
 
                     } else {
@@ -213,9 +210,9 @@ namespace Utils {
                 stack.back().open(trace(true));
             }
 
-            Path trace(bool full) const noexcept
+            TPath trace(bool full) const noexcept
             {
-                Path path;
+                TPath path;
 
                 if (!stack.empty()) {
                     auto it = std::next(stack.begin(), full ? 0 : 1);
@@ -227,12 +224,12 @@ namespace Utils {
             }
 
         private:
-            std::list<Level> stack;
+            std::list<TLevel> stack;
         };
 
-        class List : public Enum {
+        class TList : public IEnum {
         public:
-            List(std::istream &in_) : in(in_) { }
+            TList(std::istream &in_) : in(in_) { }
 
             explicit operator bool() const noexcept override {
                 return in || !refs.empty();
@@ -260,9 +257,9 @@ namespace Utils {
             }
 
         protected:
-            class Slice : public Utils::Span {
+            class Slice : public NUtils::TSpan {
             public:
-                using Utils::Span::Span;
+                using NUtils::TSpan::TSpan;
 
                 operator size_t() const noexcept {
                     return at;
@@ -271,13 +268,13 @@ namespace Utils {
 
             void examine(size_t depth) noexcept
             {
-                OS::Stat info(stack);
+                NOs::TStat info(stack);
 
-                if (info.type != OS::EDir) {
+                if (info.type != NOs::EDir) {
                     edge = depth;
                 }
 
-                if (info.type != OS::EInvalid) {
+                if (info.type != NOs::EInvalid) {
                     refs.emplace_back(info.type, depth, std::string(stack));
                 }
             }
@@ -369,5 +366,3 @@ namespace Utils {
         };
     }
 }
-
-#endif/*H_FINCORE_WALK*/

@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_MONIT
-#define H_FINCORE_MONIT
+#pragma once
 
 #include <unistd.h>
 #include <string>
@@ -16,12 +15,12 @@
 #include "ticks.h"
 #include "parts.h"
 
-class Monit {
+class TMonit {
 public:
-    using Ticks = Utils::Ticks<>;
-    using Sampled = Stats::Parted<Parts::Tailed>;
+    using TTicks = NUtils::TTicks<>;
+    using TSampled = NStats::TParted<NParts::Tailed>;
 
-    class Cfg {
+    class TCfg {
     public:
         unsigned    delay   = 0;
         size_t      count   = 1;
@@ -30,21 +29,21 @@ public:
         unsigned    subs    = 8192;
     };
 
-    Monit(const Cfg &cfg_) : cfg(cfg_) { }
+    TMonit(const TCfg &cfg_) : cfg(cfg_) { }
 
     void Do(std::string &path)
     {
-        Probe probe;
-        Parts::Scale scale(cfg.subs);
+        TProbe probe;
+        NParts::TScale scale(cfg.subs);
 
-        Sampled::Ref  was;
+        TSampled::Ref  was;
 
-        for (Ticks ti(cfg.delay * 1000, cfg.count); ti();) {
-            OS::File  file;
+        for (TTicks ti(cfg.delay * 1000, cfg.count); ti();) {
+            NOs::TFile  file;
 
             try {
-                file = OS::File(path);
-            } catch (Error &error) {
+                file = NOs::TFile(path);
+            } catch (TError &error) {
                 std::cerr << error.what() << std::endl;
 
                 break;
@@ -52,19 +51,19 @@ public:
 
             auto map = file.mmap();
 
-            const size_t bytes = ((const OS::MemRg&)map).paged();
+            const size_t bytes = ((const NOs::TMemRg&)map).paged();
 
-            Sampled::Ref now(new Sampled(bytes, scale(bytes)));
+            TSampled::Ref now(new TSampled(bytes, scale(bytes)));
 
-            probe(map, [&](Utils::Span &span) { (*now)(span); });
+            probe(map, [&](NUtils::TSpan &span) { (*now)(span); });
 
-            if (!was || Stats::Diff()(*was, *now) > cfg.thresh) {
+            if (!was || NStats::TDiff()(*was, *now) > cfg.thresh) {
                 was.reset(now.release());
 
                 std::cout
                     << Stamp()
                     << " "
-                    << Stats::Print(*was, cfg.bands)
+                    << NStats::TPrint(*was, cfg.bands)
                     << std::endl;
             }
         }
@@ -89,7 +88,6 @@ public:
     }
 
 protected:
-    const Cfg       &cfg;
+    const TCfg      &cfg;
 };
 
-#endif/*H_FINCORE_MONIT*/

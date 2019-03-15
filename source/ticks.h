@@ -1,85 +1,79 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_TICKS
-#define H_FINCORE_TICKS
+#pragma once
 
 #include <chrono>
 #include <thread>
 #include "decay.h"
 
-namespace Utils {
-    template<typename Clock = std::chrono::steady_clock>
-    class Ticks {
-        using Times = typename Clock::duration;
-        using Stamp = typename Clock::time_point;
-        using Pass  = Decay::Cfg<Times>;
-        using Value = Decay::Value;
+namespace NUtils {
+    template<typename TClock = std::chrono::steady_clock>
+    class TTicks {
+        using TDelta = typename TClock::duration;
+        using TStamp = typename TClock::time_point;
+        using TPass  = NDecay::TCfg<TDelta>;
+        using TValue = NDecay::TValue;
 
-        static_assert(Clock::is_steady, "clock should be steady");
+        static_assert(TClock::is_steady, "clock should be steady");
 
     public:
-        Ticks(unsigned msecs, unsigned cycles_) : cycles(cycles_)
+        TTicks(unsigned msecs, unsigned cycles_) : cycles(cycles_)
         {
             using namespace std::chrono;
 
-            tick = duration_cast<Times>(milliseconds(msecs));
+            tick = duration_cast<TDelta>(milliseconds(msecs));
 
-            decay = Pass(tick * 3)(tick);
+            decay = TPass(tick * 3)(tick);
         }
 
         bool operator()() noexcept
         {
             if (count++ == 0) {
-                start = stamp = Clock::now();
+                start = stamp = TClock::now();
 
             } else if (count < cycles) {
                 stamp += tick;
 
-                const auto now = Clock::now();
+                const auto now = TClock::now();
 
-                auto skip = (stamp - now) - (Times)shift;
+                auto skip = (stamp - now) - (TDelta)shift;
 
                 if (count == 2) {
-                    spent(Pass::zero(), (now - start).count());
+                    spent(TPass::Zero(), (now - start).count());
                 } else {
                     spent(decay, (now - start).count());
                 }
 
-                if (skip > Times::zero()) {
+                if (skip > TDelta::zero()) {
                     std::this_thread::sleep_for(skip);
 
-                    start = Clock::now();
+                    start = TClock::now();
 
-                    auto delta = (Times)shift + (start - stamp);
+                    auto delta = (TDelta)shift + (start - stamp);
 
                     shift(decay, delta.count());
 
                 } else {
-                    start = Clock::now();
+                    start = TClock::now();
                 }
             }
 
             return count <= cycles;
         }
 
-        template<typename Duration = Times>
-        Duration used() const noexcept
+        template<typename T = TDelta> T used() const noexcept
         {
-            using namespace std::chrono;
-
-            return duration_cast<Duration>((Times)spent);
+            return std::chrono::duration_cast<T>((TDelta)spent);
         }
 
     protected:
         unsigned        count  = 0;
         unsigned        cycles = 0;
-        Stamp           stamp;
-        Stamp           start;
-        Times           tick;
+        TStamp          stamp;
+        TStamp          start;
+        TDelta          tick;
         double          decay;
-        Value           shift;
-        Value           spent;
+        TValue          shift;
+        TValue          spent;
     };
 }
-
-#endif/*H_FINCORE_TICKS*/

@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_FILE
-#define H_FINCORE_FILE
+#pragma once
 
 #include <unistd.h>
 #include <errno.h>
@@ -13,14 +12,14 @@
 #include "error.h"
 #include "span.h"
 
-namespace OS {
-    class Loc {
-    public:
-        Loc(dev_t dev_ = 0, ino_t ino_ = 0)
-            : dev(dev_), ino(ino_) { }
+namespace NOs {
 
-        dev_t   dev     = 0;
-        ino_t   ino     = 0;
+    struct TLoc {
+        TLoc(dev_t dev_ = 0, ino_t ino_ = 0)
+            : Dev(dev_), Ino(ino_) { }
+
+        dev_t Dev = 0;
+        ino_t Ino  = 0;
     };
 
     enum FType {
@@ -36,9 +35,8 @@ namespace OS {
         EAccess     = 9,
     };
 
-    class MemRg : public Utils::Gran {
-    public:
-        using Gran::Gran;
+    struct TMemRg : public NUtils::TGran {
+        using TGran::TGran;
 
         explicit operator bool() const noexcept {
             return bytes > 0 && at != 0;
@@ -53,26 +51,26 @@ namespace OS {
         }
     };
 
-    class Mapped {
+    class TMapped {
     public:
-        using Span = Utils::Span;
+        using TSpan = NUtils::TSpan;
 
-        Mapped() noexcept { }
-        Mapped(const Mapped&) = delete;
+        TMapped() noexcept { }
+        TMapped(const TMapped&) = delete;
 
-        Mapped(Mapped &&mapped) noexcept {
+        TMapped(TMapped &&mapped) noexcept {
             *this = std::move(mapped);
         }
 
-        Mapped(int fd, const Span &span_) : span(span_)
+        TMapped(int fd, const TSpan &span_) : span(span_)
         {
             ptr = ::mmap(nullptr, span.bytes, PROT_NONE, MAP_SHARED, fd, span.at);
 
             if (ptr == MAP_FAILED)
-                throw Error("failed invoke mmap() on file");
+                throw TError("failed invoke mmap() on file");
         }
 
-        ~Mapped()
+        ~TMapped()
         {
             if (auto *was = std::exchange(ptr, nullptr)) {
                 ::munmap(was, span.bytes);
@@ -83,9 +81,9 @@ namespace OS {
             return ptr != nullptr;
         }
 
-        Mapped& operator=(const Mapped &) = delete;
+        TMapped& operator=(const TMapped &) = delete;
 
-        Mapped& operator=(Mapped &&mapped) noexcept
+        TMapped& operator=(TMapped &&mapped) noexcept
         {
             std::swap(ptr, mapped.ptr);
             std::swap(span, mapped.span);
@@ -93,35 +91,35 @@ namespace OS {
             return *this;
         }
 
-        operator MemRg() const noexcept
+        operator TMemRg() const noexcept
         {
             size_t at = reinterpret_cast<size_t>(ptr);
 
-            return MemRg(getpagesize(), Span(at, span.bytes));
+            return TMemRg(getpagesize(), TSpan(at, span.bytes));
         }
 
     protected:
         void        *ptr = nullptr;
-        Span        span;
+        TSpan       span;
     };
 
-    class File {
+    class TFile {
     public:
-        File() = default;
+        TFile() = default;
 
-        File(const std::string &path)
+        TFile(const std::string &path)
         {
             if ((fd = ::open(path.data(), O_RDONLY)) < 0)
-                throw Error("cannot open file");
+                throw TError("cannot open file");
         }
 
-        ~File() noexcept {
+        ~TFile() noexcept {
             close();
         }
 
-        File& operator=(const File&) = delete;
+        TFile& operator=(const TFile&) = delete;
 
-        File& operator=(File && file)
+        TFile& operator=(TFile && file)
         {
             close();
 
@@ -153,26 +151,25 @@ namespace OS {
             return size;
         }
 
-        void evict(const Utils::Span &sp) const
+        void evict(const NUtils::TSpan &sp) const
         {
             int eno = ::posix_fadvise(fd, sp.at, sp.bytes, POSIX_FADV_DONTNEED);
 
             if (eno != 0 ) {
-                throw Error("failed to invoke fadvise() on file");
+                throw TError("failed to invoke fadvise() on file");
             }
         }
 
-        Mapped mmap() const {
-            return Mapped(fd, Utils::Span(0, size()));
+        TMapped mmap() const {
+            return TMapped(fd, NUtils::TSpan(0, size()));
         }
 
     private:
         int fd = -1;
     };
 
-    class Stat {
-    public:
-        Stat(const std::string &path)
+    struct TStat {
+        TStat(const std::string &path)
         {
             struct stat st;
 
@@ -185,7 +182,7 @@ namespace OS {
 
         void feed(const struct stat &st) noexcept
         {
-            loc = Loc(st.st_dev, st.st_ino);
+            loc = TLoc(st.st_dev, st.st_ino);
 
             links = st.st_nlink;
 
@@ -207,10 +204,7 @@ namespace OS {
         }
 
         FType       type    = EInvalid;
-        Loc         loc;
+        TLoc        loc;
         nlink_t     links   = 0;
     };
 }
-
-#endif/*H_FINCORE_FILE*/
-

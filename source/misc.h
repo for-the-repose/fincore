@@ -1,11 +1,10 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_MISC
-#define H_FINCORE_MISC
+#pragma once
 
-namespace Misc {
-    template<typename Val>
-    Val Diff(const Val &one, const Val &two) {
+namespace NMisc {
+    template<typename TVal>
+    TVal Diff(const TVal &one, const TVal &two) {
         return std::max(one, two) - std::min(one, two);
     }
 
@@ -17,7 +16,7 @@ namespace Misc {
         return 1ll << xval;
     }
 
-    unsigned Log1000(size_t val) noexcept
+    inline unsigned Log1000(size_t val) noexcept
     {
         if (val < Pow10(3))  return 0;
         if (val < Pow10(6))  return 1;
@@ -41,7 +40,7 @@ namespace Misc {
         return DivUp(value, gran) * gran;
     }
 
-    size_t Gran2Up(size_t value) noexcept
+    inline size_t Gran2Up(size_t value) noexcept
     {
         if (value > 0) {
             value--;
@@ -57,8 +56,7 @@ namespace Misc {
         return value;
     }
 
-    size_t Gran2Down(size_t value) noexcept {
+    inline size_t Gran2Down(size_t value) noexcept {
         return (Gran2Up(value) >> 1) + 1;
     }
 }
-#endif/*H_FINCORE_MISC*/

@@ -1,14 +1,13 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_SPAN
-#define H_FINCORE_SPAN
+#pragma once
 
-namespace Utils {
-    class Span {
+namespace NUtils {
+    class TSpan {
     public:
-        Span() noexcept : Span(0, 0) { }
+        TSpan() noexcept : TSpan(0, 0) { }
 
-        Span(size_t at_, size_t bytes_) noexcept
+        TSpan(size_t at_, size_t bytes_) noexcept
             : at(at_), bytes(bytes_) { }
 
         explicit operator bool() const noexcept {
@@ -29,7 +28,7 @@ namespace Utils {
             return piece;
         }
 
-        bool join(const Span &span) noexcept
+        bool join(const TSpan &span) noexcept
         {
             if (after() == span.at) {
                 bytes += span.bytes;
@@ -44,10 +43,10 @@ namespace Utils {
         size_t bytes = 0;
     };
 
-    class Gran : public Span {
+    class TGran : public TSpan {
     public:
-        Gran(unsigned page_, const Span &span)
-            : Span(span), page(page_) { }
+        TGran(unsigned page_, const TSpan &span)
+            : TSpan(span), page(page_) { }
 
         size_t pages() const noexcept {
             return (bytes + page - 1) / page;
@@ -65,11 +64,9 @@ namespace Utils {
         unsigned    page = 0;
     };
 
-    void swap(Span &left, Span &right) noexcept
+    void swap(TSpan &left, TSpan &right) noexcept
     {
         std::swap(left.at,    right.at);
         std::swap(left.bytes, right.bytes);
     }
 }
-
-#endif/*H_FINCORE_SPAN*/

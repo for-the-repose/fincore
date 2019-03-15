@@ -1,136 +1,117 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_BANDS
-#define H_FINCORE_BANDS
+#pragma once
 
 #include <cassert>
 #include <vector>
 #include "parts.h"
 
-namespace Stats {
-    class Band {
-    public:
-        Band(size_t at_, size_t limit_)
-                : at(at_), limit(limit_) { }
+namespace NStats {
+
+    struct TBand {
+        TBand(size_t at_, size_t limit_)
+                : At(at_), Limit(limit_) { }
 
         bool operator ==(size_t offset) const noexcept {
-            return offset >= at && offset < after();
+            return offset >= At && offset < After();
         }
 
-        bool empty() const noexcept {
-            return value == 0;
+        bool Empty() const noexcept { return Value == 0; }
+
+        bool Full() const noexcept { return Value >= Limit; }
+
+        size_t After() const noexcept { return At + Limit; }
+
+        double Usage() const noexcept {
+            return Limit > 0 ? (double)Value / Limit : 0;
         }
 
-        bool full() const noexcept {
-            return value >= limit;
-        }
-
-        double usage() const noexcept {
-            return limit > 0 ? (double)value / limit : 0;
-        }
-
-        size_t after() const noexcept {
-            return at + limit;
-        }
-
-        void inc(Utils::Span &span) noexcept
+        void Inc(NUtils::TSpan &span) noexcept
         {
-            assert(span.at >= at);
+            assert(span.at >= At);
 
             if (*this == span.at) {
-                size_t piece = limit - (span.at - at);
+                size_t piece = Limit - (span.at - At);
 
-                value += span.advance(piece);
+                Value += span.advance(piece);
 
-                assert(value <= limit);
+                assert(Value <= Limit);
             }
         }
 
-        size_t      at = 0;
-        size_t      limit = 0;
-        size_t      value = 0;
+        size_t At = 0;
+        size_t Limit = 0;
+        size_t Value = 0;
     };
 
-    class Bands {
+    class TBands {
     public:
-        using Vec = std::vector<Band>;
+        using TVec = std::vector<TBand>;
 
-        Bands(size_t size, size_t slots) : all(0, size)
+        TBands(size_t size, size_t slots) : All(0, size)
         {
-            bands.reserve(slots);
+            Bands.reserve(slots);
         }
 
-        operator const Vec&() const noexcept {
-            return bands;
-        }
+        operator const TVec&() const noexcept { return Bands; }
 
-        operator const Band&() const noexcept {
-            return all;
-        }
+        operator const TBand&() const noexcept { return All; }
 
-        double raito() const noexcept {
-            return all.usage();
-        }
+        double Raito() const noexcept { return All.Usage(); }
 
-        size_t size() const noexcept {
-            return bands.size();
-        }
+        size_t Size() const noexcept { return Bands.size(); }
 
     protected:
-        void accum(Utils::Span span) noexcept
+        void Accum(NUtils::TSpan span) noexcept
         {
-            all.inc(span);
+            All.Inc(span);
 
             assert(!span);
         }
 
-        Band        all;
-        Vec         bands;
+        TBand All;
+        TVec  Bands;
     };
 
     template<template<typename Fwd> class  Algo>
-    class Parted : public Bands {
+    class TParted : public TBands {
     public:
-        using Ref = std::unique_ptr<Parted<Algo>>;
-        using Iter = Parts::Range::const_iterator;
+        using Ref = std::unique_ptr<TParted<Algo>>;
+        using TIter = NParts::TRange::const_iterator;
 
-        Parted(size_t size, size_t slots) : Bands(size, slots)
+        TParted(size_t size, size_t slots) : TBands(size, slots)
         {
-            using namespace Parts;
+            using namespace NParts;
 
-            auto make = [&](size_t z, Iter &at, Iter &end) {
-                bands.emplace_back(at, end - at);
+            auto make = [&](size_t z, TIter &at, TIter &end) {
+                Bands.emplace_back(at, end - at);
             };
 
-            limit = Algo<Range>(Range(0, size), slots)(make);
+            Limit = Algo<TRange>(TRange(0, size), slots)(make);
 
-            assert(size == bands.back().after());
+            assert(size == Bands.back().After());
         }
 
-        void operator()(Utils::Span &span) noexcept
+        void operator()(NUtils::TSpan &span) noexcept
         {
             if (span) {
-                accum(span);
+                Accum(span);
 
-                auto it = bands.begin();
+                auto it = Bands.begin() + (span.at / Limit);
 
-                it += span.at / limit;
+                assert(it->At <= span.at);
 
-                assert(it->at <= span.at);
+                it = std::find(it, Bands.end(), span.at);
 
-                it = std::find(it, bands.end(), span.at);
-
-                for (; span && it != bands.end(); it++) {
-                    it->inc(span);
+                for (; span && it != Bands.end(); it++) {
+                    it->Inc(span);
                 }
-            }
+			}
 
             assert(!span);
         }
 
     protected:
-        size_t      limit = 0;
+        size_t Limit = 0;
     };
 }
-
-#endif/*H_FINCORE_BANDS*/

@@ -1,45 +1,41 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_DIFF
-#define H_FINCORE_DIFF
+#pragma once
 
 #include <cassert>
 
 #include "misc.h"
 #include "bands.h"
 
-namespace Stats {
+namespace NStats {
 
-    class Diff {
-    public:
-        using Vec = Bands::Vec;
+    struct TDiff {
+        using TVec = TBands::TVec;
 
-        double operator()(const Bands &one, const Bands &two) const noexcept
+        double operator()(const TBands &one, const TBands &two) const noexcept
         {
-            return std::max(diff(one, two), spacial(one, two));
+            return std::max(Diff(one, two), Spacial(one, two));
         }
 
-        double spacial(const Vec &one, const Vec &two) const noexcept
+        double Spacial(const TVec &one, const TVec &two) const noexcept
         {
             assert(one.size() == two.size());
 
             double accum = 0;
 
             for (size_t z = 0; z < one.size(); z++) {
-                accum += Diff::diff(one[z], two[z]);
+                accum += TDiff::Diff(one[z], two[z]);
             }
 
             return accum;
         }
 
-        static double diff(const Band &one, const Band &two) noexcept
+        static double Diff(const TBand &one, const TBand &two) noexcept
         {
-            double diff = Misc::Diff(one.value, two.value);
-            size_t total = one.limit + two.limit;
+            double diff = NMisc::Diff(one.Value, two.Value);
+            size_t total = one.Limit + two.Limit;
 
             return total > 0 ? (2 * diff / total) : 0;
         }
     };
 }
-
-#endif/*H_FINCORE_DIFF*/

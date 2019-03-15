@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_TOP
-#define H_FINCORE_TOP
+#pragma once
 
 #include <map>
 #include <memory>
@@ -9,16 +8,15 @@
 #include "probe.h"
 #include "humans.h"
 
-class Top {
+class TTop {
 public:
-    class Cfg {
-    public:
+    struct TCfg {
         enum EReduct {
             REDUCT_NONE     = 0,
             REDUCT_TOP      = 1
         };
 
-        const Cfg& validate()
+        const TCfg& validate()
         {
             raito = std::min(1., std::max(0., raito));
 
@@ -33,18 +31,18 @@ public:
         double      raito   = 0.;
     };
 
-    class Entry {
-        using Ref = Utils::Dir::Ref;
+    class TEntry {
+        using Ref = NUtils::NDir::Ref;
 
     public:
-        using Key = size_t;
+        using TKey = size_t;
 
-        Entry(size_t size, size_t used, Ref &&ref) noexcept
+        TEntry(size_t size, size_t used, Ref &&ref) noexcept
             : Used(used), Size(size), Label(std::move(ref)) { }
 
-        Entry() : Entry(0, 0, { }) { }
+        TEntry() : TEntry(0, 0, { }) { }
 
-        Entry(Entry &&entry) noexcept
+        TEntry(TEntry &&entry) noexcept
         {
             *this = std::move(entry);
         }
@@ -54,12 +52,12 @@ public:
             return bool(Label);
         }
 
-        bool operator <(const Entry &rval) const noexcept
+        bool operator <(const TEntry &rval) const noexcept
         {
             return Used < rval.Used;
         }
 
-        Entry& operator +=(const Entry &rval) noexcept
+        TEntry& operator +=(const TEntry &rval) noexcept
         {
             assert(Label.depth < rval.Label.depth);
 
@@ -69,7 +67,7 @@ public:
             return *this;
         }
 
-        Entry& operator =(Entry &&rval) noexcept
+        TEntry& operator =(TEntry &&rval) noexcept
         {
             using namespace std;
 
@@ -97,8 +95,8 @@ public:
     class IReduct {
     public:
         virtual ~IReduct() { }
-        virtual void push(Entry) noexcept = 0;
-        virtual Entry pop() noexcept = 0;
+        virtual void push(TEntry) noexcept = 0;
+        virtual TEntry pop() noexcept = 0;
     };
 
     class ReTop : public IReduct {
@@ -106,7 +104,7 @@ public:
         ReTop(size_t limit_) : limit(limit_) { }
 
     protected:
-        void push(Entry entry) noexcept override
+        void push(TEntry entry) noexcept override
         {
             heap.emplace(entry.Used, std::move(entry));
 
@@ -115,9 +113,9 @@ public:
             }
         }
 
-        Entry pop() noexcept override
+        TEntry pop() noexcept override
         {
-            Entry   last;
+            TEntry   last;
 
             if (heap.size() > 0) {
                 last = std::move(heap.rbegin()->second);
@@ -128,38 +126,38 @@ public:
         }
 
     private:
-        using Heap = std::multimap<Entry::Key, Entry>;
+        using THeap = std::multimap<TEntry::TKey, TEntry>;
 
         size_t      limit = 0;
-        Heap        heap;
+        THeap        heap;
     };
 
-    Top(const Cfg &cfg_) : cfg(cfg_) { }
+    TTop(const TCfg &cfg_) : cfg(cfg_) { }
 
     void Do(const std::string &root)
     {
-        Utils::Dir::Walk walk(root);
+        NUtils::NDir::TWalk walk(root);
 
         Do(root, walk);
     }
 
     void Do(std::istream &in)
     {
-        Utils::Dir::List list(in);
+        NUtils::NDir::TList list(in);
 
         Do("", list);
     }
 
 protected:
-    void Do(const std::string &root, Utils::Dir::Enum &walk)
+    void Do(const std::string &root, NUtils::NDir::IEnum &walk)
     {
-        using namespace Utils;
+        using namespace NUtils;
 
         MakeReductor();
 
-        Probe       probe;
-        Entry       top(0, 0, Dir::Ref(OS::EDir, 0, ":summary"));
-        Entry       aggr;
+        TProbe probe;
+        TEntry top(0, 0, NDir::Ref(NOs::EDir, 0, ":summary"));
+        TEntry aggr;
 
         while (walk) {
             auto ref = walk.next();
@@ -167,21 +165,21 @@ protected:
             if (aggr && !aggr.Label.IsAbove(ref))
                 Feed(std::move(aggr));
 
-            if (ref.type == OS::EDir) {
+            if (ref.type == NOs::EDir) {
                 if (ref.depth == cfg.edge) {
                     assert(!aggr);
 
-                    aggr = Entry(0, 0, std::move(ref));
+                    aggr = TEntry(0, 0, std::move(ref));
                 }
 
-            } else if (ref.type == OS::EReg) {
-                OS::File file;
+            } else if (ref.type == NOs::EReg) {
+                NOs::TFile file;
 
-                const auto path = Dir::Path(root).add(ref);
+                const auto path = NDir::TPath(root).add(ref);
 
                 try {
-                    file = OS::File(path);
-                } catch (Error &error) {
+                    file = NOs::TFile(path);
+                } catch (TError &error) {
                     std::cerr << "cannot open file " << ref.name << std::endl;
 
                     continue;
@@ -190,9 +188,9 @@ protected:
                 if (file.size() > 0) {
                     auto map = file.mmap();
 
-                    Entry entry(((OS::MemRg)map).paged(), 0, std::move(ref));
+                    TEntry entry(((NOs::TMemRg)map).paged(), 0, std::move(ref));
 
-                    probe(map, [&](Utils::Span &span) { entry.Used += span.bytes;});
+                    probe(map, [&](NUtils::TSpan &span) { entry.Used += span.bytes;});
 
                     top += entry;
 
@@ -203,7 +201,7 @@ protected:
                     }
                 }
 
-            } else if (ref.type == OS::EAccess) {
+            } else if (ref.type == NOs::EAccess) {
                 std::cerr << "cannot deep to " << ref.name << std::endl;
             }
         }
@@ -218,12 +216,12 @@ protected:
     {
         assert(!reduct);
 
-        if (cfg.reduct == Cfg::REDUCT_TOP) {
-            reduct = RePtr(new ReTop(cfg.limit));
+        if (cfg.reduct == TCfg::REDUCT_TOP) {
+            reduct = TRePtr(new ReTop(cfg.limit));
         }
     }
 
-    void Feed(Entry entry)
+    void Feed(TEntry entry)
     {
         if (entry.Used == 0 && !cfg.zeroes) {
             /* ignore unsued entries        */
@@ -238,18 +236,16 @@ protected:
 
     void Drain()
     {
-        if (auto was = std::exchange(reduct, { })) {
-            while (auto last = was->pop())
-                Print(last);
-        }
+        if (auto was = std::exchange(reduct, { }))
+            while (auto last = was->pop()) Print(last);
     }
 
-    void Print(const Entry &entry)
+    void Print(const TEntry &entry)
     {
         std::cout
-            << std::setw(5) << Humans::Value(entry.Used)
+            << std::setw(5) << NHumans::Value(entry.Used)
             << " of "
-            << std::setw(5) << Humans::Value(entry.Size)
+            << std::setw(5) << NHumans::Value(entry.Size)
             << " "
             << std::setw(2) << entry.Label.depth
             << " "
@@ -257,10 +253,8 @@ protected:
             << std::endl;
     }
 
-    using RePtr = std::unique_ptr<IReduct>;
+    using TRePtr = std::unique_ptr<IReduct>;
 
-    const Cfg   &cfg;
-    RePtr       reduct;
+    const TCfg  &cfg;
+    TRePtr      reduct;
 };
-
-#endif/*H_FINCORE_TOP*/

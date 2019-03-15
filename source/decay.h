@@ -1,50 +1,44 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_DECAY
-#define H_FINCORE_DECAY
+#pragma once
 
 #include <cassert>
 #include <cmath>
 #include <chrono>
 
-namespace Decay {
-    template<typename Times>
-    class Cfg {
-    public:
-        Cfg(Times depth_) : depth(depth_) { }
+namespace NDecay {
+    template<typename TDelta> struct TCfg {
+        TCfg(TDelta depth_) : Depth(depth_) { }
 
-        double operator()(Times delta) const noexcept
+        double operator()(TDelta delta) const noexcept
         {
-            double coeff = depth.count();
+            double coeff = Depth.count();
 
             return std::exp(-delta.count() / coeff);
         }
 
-        static double zero() noexcept {
-            return 0;
-        }
+        static double Zero() noexcept { return 0; }
 
-        Times depth{ 0 };
+        TDelta Depth{ 0 };
     };
 
-    class Value {
+    class TValue {
     public:
-        using Unit = ssize_t;
+        using TUnit = ssize_t;
 
-        operator Unit() const noexcept {
-            return state;
+        operator TUnit() const noexcept {
+            return State;
         }
 
-        Unit operator ()(double pass, Unit value) noexcept
+        TUnit operator ()(double pass, TUnit value) noexcept
         {
-            state = (1 - pass) * value + pass * state;
+            State = (1 - pass) * value + pass * State;
 
-            return state + 0.5;
+            return State + 0.5;
         }
 
     protected:
-        double state = 0;
+        double State = 0;
     };
 }
 
-#endif/*H_FINCORE_DECAY*/

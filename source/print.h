@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_PRINT
-#define H_FINCORE_PRINT
+#pragma once
 
 #include <cassert>
 #include <iostream>
@@ -10,14 +9,14 @@
 #include "humans.h"
 #include "parts.h"
 
-namespace Stats {
-    class Print {
+namespace NStats {
+    class TPrint {
     public:
-        using Iter = Bands::Vec::const_iterator;
+        using TIter = TBands::TVec::const_iterator;
 
-        Print(const Bands &bands_, size_t slots_ = 0) : bands(bands_)
+        TPrint(const TBands &bands_, size_t slots_ = 0) : bands(bands_)
         {
-            slots = slots_ > 0 ? slots_ : bands.size();
+            slots = slots_ > 0 ? slots_ : bands.Size();
         }
 
         std::ostream& operator()(std::ostream &os) const noexcept
@@ -26,26 +25,26 @@ namespace Stats {
 
             os
                 << fixed << setprecision(1) << setw(5)
-                << (bands.raito() * 100.)
+                << (bands.Raito() * 100.)
                 << "% [" << Dots(bands) << "] "
-                << Humans::Value(((const Band&)bands).limit);
+                << NHumans::Value(((const TBand&)bands).Limit);
 
             return os;
         }
 
-        std::string Dots(const Bands::Vec &vec) const noexcept
+        std::string Dots(const TBands::TVec &vec) const noexcept
         {
             std::string dots;
 
             dots.reserve(slots);
 
-            auto put = [&](size_t z, Iter at, Iter end)
+            auto put = [&](size_t z, TIter at, TIter end)
             {
-                Band aggr(0, 0);
+                TBand aggr(0, 0);
 
                 for (; at != end; at++) {
-                    aggr.limit += at->limit;
-                    aggr.value += at->value;
+                    aggr.Limit += at->Limit;
+                    aggr.Value += at->Value;
                 }
 
                 const char syms[] = ".,~0123456789+";
@@ -53,21 +52,21 @@ namespace Stats {
                 dots.append(1, syms[Class_0_13(aggr)]);
             };
 
-            Parts::Equal<Bands::Vec>(vec, slots)(put);
+            NParts::Equal<TBands::TVec>(vec, slots)(put);
 
             assert(dots.size() == slots);
 
             return dots;
         }
 
-        static unsigned Class_0_13(const Band &band) noexcept
+        static unsigned Class_0_13(const TBand &band) noexcept
         {
-            if (band.empty()) {
+            if (band.Empty()) {
                 return 0;
-            } else if (band.full()) {
+            } else if (band.Full()) {
                 return 13;
             } else {
-                const double fill = band.usage();
+                const double fill = band.Usage();
 
                 if (fill < 0.001) {
                     return 1;
@@ -81,13 +80,11 @@ namespace Stats {
 
     protected:
         size_t          slots = 0;
-        const Bands     &bands;
+        const TBands    &bands;
     };
 
-    std::ostream& operator<<(std::ostream &os, const Print &pr) noexcept
+    std::ostream& operator<<(std::ostream &os, const TPrint &pr) noexcept
     {
         return pr(os);
     }
 }
-
-#endif/*H_FINCORE_PRINT*/

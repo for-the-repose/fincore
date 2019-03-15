@@ -1,22 +1,22 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_PARTS
-#define H_FINCORE_PARTS
+#pragma once
 
 #include <functional>
 #include <iterator>
 #include <cassert>
 #include "misc.h"
 
-namespace Parts {
-    class Scale {
+namespace NParts {
+
+    class TScale {
     public:
-        Scale(size_t lower_) : lower(lower_) { }
+        TScale(size_t lower_) : lower(lower_) { }
 
         size_t operator ()(size_t size) noexcept
         {
-            chunk = Misc::Gran2Down(size / lower);
-            slots = Misc::DivUp(size, chunk);
+            chunk = NMisc::Gran2Down(size / lower);
+            slots = NMisc::DivUp(size, chunk);
 
             return slots;
         }
@@ -27,12 +27,12 @@ namespace Parts {
         size_t      chunk   = 0;
     };
 
-    class Range {
+    class TRange {
     public:
-        using Ibase = std::iterator<std::random_access_iterator_tag, size_t>;
+        using IBase = std::iterator<std::random_access_iterator_tag, size_t>;
 
-        class const_iterator : public Ibase {
-            using Iter = const_iterator;
+        class const_iterator : public IBase {
+            using TIter = const_iterator;
 
         public:
             const_iterator(size_t at_) : at(at_) { }
@@ -45,15 +45,15 @@ namespace Parts {
                 return at;
             }
 
-            Iter& operator+=(size_t inc) noexcept {
+            TIter& operator+=(size_t inc) noexcept {
                 return at += inc, *this;
             }
 
-            Iter& operator++() noexcept {
+            TIter& operator++() noexcept {
                 return at++, *this;
             }
 
-            Iter operator++(int) noexcept {
+            TIter operator++(int) noexcept {
                 return at++, *this;
             }
 
@@ -61,9 +61,9 @@ namespace Parts {
             size_t      at;
         };
 
-        Range(size_t length) : Range(0, length) { }
+        TRange(size_t length) : TRange(0, length) { }
 
-        Range(size_t start_, size_t stop_)
+        TRange(size_t start_, size_t stop_)
             : start(start_), stop(stop_) { }
 
         size_t size() const noexcept {
@@ -83,27 +83,27 @@ namespace Parts {
         size_t stop = 0;
     };
 
-    template<typename Fwd, typename Above> class Base_ {
+    template<typename Fwd, typename Above> class TBase_ {
     public:
-        using Iter = typename Fwd::const_iterator;
-        using Func = std::function<void(size_t seq, Iter&, Iter&)>;
+        using TIter = typename Fwd::const_iterator;
+        using TFunc = std::function<void(size_t seq, TIter&, TIter&)>;
 
-        Base_(const Fwd &fwd_, size_t parts) noexcept
+        TBase_(const Fwd &fwd_, size_t parts) noexcept
                 : total(fwd_.size()), fwd(fwd_)
         {
-            limit = parts < total ? Misc::DivUp(total, parts) : 1;
+            limit = parts < total ? NMisc::DivUp(total, parts) : 1;
         }
 
-        size_t operator ()(const Func &func) const noexcept
+        size_t operator ()(const TFunc &func) const noexcept
         {
             size_t part = 0, off = 0;
 
             auto *child = static_cast<const Above*>(this);
 
-            for (Iter it = fwd.begin(); it != fwd.end();) {
+            for (TIter it = fwd.begin(); it != fwd.end();) {
                 const size_t step = child->advance(off);
 
-                Iter next = std::next(it, step);
+                TIter next = std::next(it, step);
 
                 func(part, it, next);
 
@@ -121,38 +121,36 @@ namespace Parts {
         const Fwd   &fwd;
     };
 
-    template<typename Fwd> class Tailed : public Base_<Fwd, Tailed<Fwd>> {
+    template<typename Fwd> class Tailed : public TBase_<Fwd, Tailed<Fwd>> {
     public:
-        using Base = Base_<Fwd, Tailed<Fwd>>;
+        using TBase = TBase_<Fwd, Tailed<Fwd>>;
 
-        Tailed(const Fwd &fwd_, size_t parts) noexcept : Base(fwd_, parts)
+        Tailed(const Fwd &fwd_, size_t parts) noexcept : TBase(fwd_, parts)
         {
 
         }
 
         size_t advance(size_t off) const noexcept
         {
-            return std::min(Base::total - off, Base::limit);
+            return std::min(TBase::total - off, TBase::limit);
         }
     };
 
-    template<typename Fwd> class Equal : public Base_<Fwd, Equal<Fwd>> {
+    template<typename Fwd> class Equal : public TBase_<Fwd, Equal<Fwd>> {
     public:
-        using Base = Base_<Fwd, Equal<Fwd>>;
+        using TBase = TBase_<Fwd, Equal<Fwd>>;
 
-        Equal(const Fwd &fwd_, size_t parts) noexcept : Base(fwd_, parts)
+        Equal(const Fwd &fwd_, size_t parts) noexcept : TBase(fwd_, parts)
         {
-            edge = Base::limit * (Base::total - parts * (Base::limit - 1));
+            edge = TBase::limit * (TBase::total - parts * (TBase::limit - 1));
         }
 
         size_t advance(size_t off) const noexcept
         {
-            return Base::limit - bool(off >= edge);
+            return TBase::limit - bool(off >= edge);
         }
 
     protected:
         size_t edge = 0;
     };
 }
-
-#endif/*H_FINCORE_PARTS*/

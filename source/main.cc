@@ -44,7 +44,7 @@ int do_trace(int argc, char *argv[])
     extern char *optarg;
     
     std::string path;
-    Monit::Cfg  cfg;
+    TMonit::TCfg  cfg;
 
     while (true) {
         static const char opts[] = "f:d:c:r:";
@@ -70,7 +70,7 @@ int do_trace(int argc, char *argv[])
         return 1;
 
     } else {
-        Monit(cfg).Do(path);
+        TMonit(cfg).Do(path);
     }
 
     return 0;
@@ -99,9 +99,9 @@ int do_evict(int argc, char *argv[])
         std::cerr << "path to file is not given" << std::endl;
 
     } else {
-        OS::File file(path);
+        NOs::TFile file(path);
 
-        const Utils::Span all(0, file.size());
+        const NUtils::TSpan all(0, file.size());
 
         file.evict(all);
     }
@@ -116,7 +116,7 @@ int do_stats(int argc, char *argv[])
 
     std::string path;
     bool        input = false;
-    Top::Cfg    cfg;
+    TTop::TCfg  cfg;
 
     while (true) {
         static const char opts[] = "f:d:r:l:c:zsi";
@@ -143,9 +143,9 @@ int do_stats(int argc, char *argv[])
             const std::string rname(optarg);
 
             if (rname == "none") {
-                cfg.reduct = Top::Cfg::REDUCT_NONE;
+                cfg.reduct = TTop::TCfg::REDUCT_NONE;
             } else if (rname == "top") {
-                cfg.reduct = Top::Cfg::REDUCT_TOP;
+                cfg.reduct = TTop::TCfg::REDUCT_TOP;
             } else {
                 std::cerr << "unknown reductor " << rname << std::endl;
 
@@ -157,9 +157,9 @@ int do_stats(int argc, char *argv[])
     if (!path.empty() && input) {
         std::cerr << "only one of -f or -i allowed" << std::endl;
     } else if (!path.empty()){
-        Top(cfg.validate()).Do(path);
+        TTop(cfg.validate()).Do(path);
     } else if (input) {
-        Top(cfg.validate()).Do(std::cin);
+        TTop(cfg.validate()).Do(std::cin);
     } else {
         std::cerr << "path to directory is not given" << std::endl;
     }

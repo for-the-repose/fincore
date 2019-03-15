@@ -1,7 +1,6 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
-#ifndef H_FINCORE_PROBE
-#define H_FINCORE_PROBE
+#pragma once
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -15,24 +14,24 @@
 #include "error.h"
 #include "file.h"
 
-class Probe {
+class TProbe {
 public:
-    using Func = std::function<void(Utils::Span&)>;
+    using TFunc = std::function<void(NUtils::TSpan&)>;
 
-    Probe()
+    TProbe()
         : items(64 * 1024)
     {
         array = array_t(new uint8_t[items]);
     }
 
-    void operator()(const OS::MemRg &mem, const Func &feed) const
+    void operator()(const NOs::TMemRg &mem, const TFunc &feed) const
     {
         const size_t gran = mem.gran();
 
         if (mem.paged() > 0) {
             char *it = mem;
 
-            Utils::Span accum(0, 0);
+            NUtils::TSpan accum(0, 0);
 
             const size_t pages = mem.pages();
 
@@ -41,11 +40,11 @@ public:
                 const size_t bytes = chunk * gran;
 
                 if (mincore(it, bytes, array.get()) < 0 )
-                    throw Error("error happens while mincore() invocation");
+                    throw TError("error happens while mincore() invocation");
 
                 for (size_t z = 0; z < chunk; z++) {
                     if (array[z] & 0x01) {
-                        Utils::Span span((page + z) * gran, gran);
+                        NUtils::TSpan span((page + z) * gran, gran);
 
                         if (!accum.join(span)) {
                             feed(accum);
@@ -68,5 +67,3 @@ protected:
     size_t      items;
     array_t     array;
 };
-
-#endif/*H_FINCORE_PROBE*/
