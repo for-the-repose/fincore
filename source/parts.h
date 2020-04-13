@@ -37,28 +37,20 @@ namespace NParts {
         public:
             const_iterator(size_t at_) : at(at_) { }
 
-            operator size_t() const noexcept {
-                return at;
-            }
+            operator size_t()    const noexcept { return at; }
 
-            size_t operator *() const noexcept {
-                return at;
-            }
+            size_t operator *()  const noexcept { return at; }
 
-            TIter& operator+=(size_t inc) noexcept {
-                return at += inc, *this;
-            }
+            TIter& operator+=(size_t inc) noexcept { return at += inc, *this; }
 
-            TIter& operator++() noexcept {
-                return at++, *this;
-            }
+            TIter& operator++()   noexcept { return at++, *this; }
 
-            TIter operator++(int) noexcept {
-                return at++, *this;
-            }
+			TIter& operator--()   noexcept { return at--, *this; }
+
+            TIter operator++(int) noexcept { return at++, *this; }
 
         protected:
-            size_t      at;
+            size_t      at = 0;
         };
 
         TRange(size_t length) : TRange(0, length) { }
@@ -66,17 +58,11 @@ namespace NParts {
         TRange(size_t start_, size_t stop_)
             : start(start_), stop(stop_) { }
 
-        size_t size() const noexcept {
-            return stop - start;
-        }
+        size_t size()          const noexcept { return stop - start; }
 
-        const_iterator begin() const noexcept {
-            return start;
-        }
+        const_iterator begin() const noexcept { return start; }
 
-        const_iterator end() const noexcept {
-            return stop;
-        }
+        const_iterator end()   const noexcept { return stop; }
 
     protected:
         size_t start = 0;

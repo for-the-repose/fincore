@@ -64,7 +64,7 @@ namespace NOs {
 
         TMapped(int fd, const TSpan &span_) : span(span_)
         {
-            ptr = ::mmap(nullptr, span.bytes, PROT_NONE, MAP_SHARED, fd, span.at);
+            ptr = ::mmap(nullptr, span.bytes, PROT_READ, MAP_SHARED, fd, span.at);
 
             if (ptr == MAP_FAILED)
                 throw TError("failed invoke mmap() on file");
@@ -77,9 +77,9 @@ namespace NOs {
             }
         }
 
-        explicit operator bool() const noexcept {
-            return ptr != nullptr;
-        }
+        explicit operator bool() const { return ptr; }
+
+        void *operator*() const { return ptr; }
 
         TMapped& operator=(const TMapped &) = delete;
 

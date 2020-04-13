@@ -13,7 +13,7 @@ fincore: $(patsubst %,_obj/%.o, $(SOURCES))
 	$(CXX) -o $@ $^ -lc
 
 _obj/%.cc.o : source/%.cc
-	$(CXX) -std=c++14 -c ${CFLAGS} -o $@ $<
+	$(CXX) -std=c++17 -c ${CFLAGS} -o $@ $<
 
 clean:
 	@rm -f _obj/*

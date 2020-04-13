@@ -1,14 +1,17 @@
 /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #include <string>
+#include <sys/mman.h>
 
 #include "monit.h"
 #include "file.h"
 #include "top.h"
 
+
 int do_trace(int argc, char *argv[]);
 int do_evict(int argc, char *argv[]);
 int do_stats(int argc, char *argv[]);
+int do_lock(int args, char *argv[]);
 void usage() noexcept;
 
 
@@ -28,6 +31,8 @@ int main(int argc, char *argv[])
             return do_evict(argc--, argv++);
         } else if (mod == "stats") {
             return do_stats(argc--, argv++);
+        } else if (mod == "lock") {
+            return do_lock(argc--, argv++);
         } else {
             std::cerr << "unknown mode " << mod << std::endl;
 
@@ -168,6 +173,49 @@ int do_stats(int argc, char *argv[])
 }
 
 
+int do_lock(int argc, char *argv[])
+{
+    extern char *optarg;
+
+    std::string path;
+    uint64_t seconds = 0;
+
+    while (true) {
+        static const char opts[] = "f:s:";
+
+        const int opt = getopt(argc, argv, opts);
+
+        if (opt < 0) break;
+
+        if (opt == 'f') {
+            path = optarg;
+        } else if (opt == 's') {
+            seconds = std::stoull(optarg);
+        }
+    }
+
+    if (path.empty()) {
+        std::cerr << "path to file is not given" << std::endl;
+    } else {
+        NOs::TFile file(path);
+        auto map = file.mmap();
+        auto bytes = NOs::TMemRg(map).bytes;
+
+        if (mlock(*map, bytes)) {
+            std::cerr << "Cannot lock memory, errno " << errno << "\n";
+        } else {
+            std::cerr << "Locked " << bytes << " bytes of " << path << "\n";
+
+            sleep(seconds);
+
+            std::cerr << "Unlocking memory after " << seconds << " seconds\n";
+        }
+    }
+
+    return 0;
+}
+
+
 void usage() noexcept
 {
     std::cerr
@@ -192,6 +240,10 @@ void usage() noexcept
         << "\n   -l items   Items limit for reduction"
         << "\n   -s         Collect root summary stats"
         << "\n   -c raito   Cache filter raito for aggr"
+        << "\n"
+        << "\n Options for lock"
+        << "\n   -f path    Path to file for locking in memory"
+        << "\n   -s seconds How long to keep memory locked"
         << std::endl;
 }
 
