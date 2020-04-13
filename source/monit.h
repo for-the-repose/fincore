@@ -49,7 +49,7 @@ public:
                 break;
             }
 
-            auto map = file.mmap();
+            auto map = file.MMap();
 
             const size_t bytes = ((const NOs::TMemRg&)map).paged();
 

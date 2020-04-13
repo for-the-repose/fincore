@@ -106,9 +106,9 @@ int do_evict(int argc, char *argv[])
     } else {
         NOs::TFile file(path);
 
-        const NUtils::TSpan all(0, file.size());
+        const NUtils::TSpan all(0, file.Size());
 
-        file.evict(all);
+        file.Evict(all);
     }
 
     return 0;
@@ -198,7 +198,7 @@ int do_lock(int argc, char *argv[])
         std::cerr << "path to file is not given" << std::endl;
     } else {
         NOs::TFile file(path);
-        auto map = file.mmap();
+        auto map = file.MMap();
         auto bytes = NOs::TMemRg(map).bytes;
 
         if (mlock(*map, bytes)) {

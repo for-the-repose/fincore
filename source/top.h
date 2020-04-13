@@ -156,7 +156,7 @@ protected:
         MakeReductor();
 
         TProbe probe;
-        TEntry top(0, 0, NDir::Ref(NOs::EDir, 0, ":summary"));
+        TEntry top(0, 0, NDir::Ref(NOs::ENode::Dir, 0, ":summary"));
         TEntry aggr;
 
         while (walk) {
@@ -165,14 +165,14 @@ protected:
             if (aggr && !aggr.Label.IsAbove(ref))
                 Feed(std::move(aggr));
 
-            if (ref.type == NOs::EDir) {
+            if (ref.type == NOs::ENode::Dir) {
                 if (ref.depth == cfg.edge) {
                     assert(!aggr);
 
                     aggr = TEntry(0, 0, std::move(ref));
                 }
 
-            } else if (ref.type == NOs::EReg) {
+            } else if (ref.type == NOs::ENode::File) {
                 NOs::TFile file;
 
                 const auto path = NDir::TPath(root).add(ref);
@@ -185,8 +185,8 @@ protected:
                     continue;
                 }
 
-                if (file.size() > 0) {
-                    auto map = file.mmap();
+                if (file.Size() > 0) {
+                    auto map = file.MMap();
 
                     TEntry entry(((NOs::TMemRg)map).paged(), 0, std::move(ref));
 
@@ -201,7 +201,7 @@ protected:
                     }
                 }
 
-            } else if (ref.type == NOs::EAccess) {
+            } else if (ref.type == NOs::ENode::Access) {
                 std::cerr << "cannot deep to " << ref.name << std::endl;
             }
         }

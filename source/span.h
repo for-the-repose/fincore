@@ -45,7 +45,7 @@ namespace NUtils {
 
     class TGran : public TSpan {
     public:
-        TGran(unsigned page_, const TSpan &span)
+        TGran(size_t page_, const TSpan &span)
             : TSpan(span), page(page_) { }
 
         size_t pages() const noexcept {
@@ -61,7 +61,7 @@ namespace NUtils {
         }
 
     protected:
-        unsigned    page = 0;
+        size_t    page = 0;
     };
 
     void swap(TSpan &left, TSpan &right) noexcept

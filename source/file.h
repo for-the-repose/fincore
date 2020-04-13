@@ -22,17 +22,17 @@ namespace NOs {
         ino_t Ino  = 0;
     };
 
-    enum FType {
-        EInvalid    = 0,
-        EReg        = 1,
-        EDir        = 2,
-        EChar       = 3,
-        EBlock      = 4,
-        EFifo       = 5,
-        ELink       = 6,
-        ESock       = 7,
-        EOther      = 8,
-        EAccess     = 9,
+    enum ENode {
+        None    	= 0,
+        File        = 1,
+        Dir         = 2,
+        Char        = 3,
+        Block       = 4,
+        Fifo        = 5,
+        Link        = 6,
+        Sock        = 7,
+        Other       = 8,
+        Access      = 9,
     };
 
     struct TMemRg : public NUtils::TGran {
@@ -95,7 +95,7 @@ namespace NOs {
         {
             size_t at = reinterpret_cast<size_t>(ptr);
 
-            return TMemRg(getpagesize(), TSpan(at, span.bytes));
+            return { size_t(getpagesize()), TSpan(at, span.bytes) };
         }
 
     protected:
@@ -113,35 +113,29 @@ namespace NOs {
                 throw TError("cannot open file");
         }
 
-        ~TFile() noexcept {
-            close();
-        }
+        ~TFile() noexcept { Close(); }
 
         TFile& operator=(const TFile&) = delete;
 
         TFile& operator=(TFile && file)
         {
-            close();
+            Close();
 
             std::swap(fd, file.fd);
 
             return *this;
         }
 
-        explicit operator bool() const noexcept {
-            return fd > -1;
-        }
+        explicit operator bool() const noexcept { return fd > -1; }
 
-        operator int() const noexcept {
-            return fd;
-        }
+        operator int() const noexcept { return fd; }
 
-        void close() noexcept
+        void Close() noexcept
         {
-            if (*this) ::close(fd), fd = -1;
+            if (*this) ::close(std::exchange(fd, -1));
         }
 
-        size_t size() const noexcept
+        size_t Size() const noexcept
         {
             off_t was = ::lseek(fd, 0, SEEK_CUR);
             off_t size = ::lseek(fd, 0, SEEK_END);
@@ -151,7 +145,7 @@ namespace NOs {
             return size;
         }
 
-        void evict(const NUtils::TSpan &sp) const
+        void Evict(const NUtils::TSpan &sp) const
         {
             int eno = ::posix_fadvise(fd, sp.at, sp.bytes, POSIX_FADV_DONTNEED);
 
@@ -160,51 +154,58 @@ namespace NOs {
             }
         }
 
-        TMapped mmap() const {
-            return TMapped(fd, NUtils::TSpan(0, size()));
-        }
+        TMapped MMap() const { return { fd, NUtils::TSpan(0, Size()) }; }
 
     private:
         int fd = -1;
     };
 
     struct TStat {
+		TStat(const TFile &file)
+		{
+            struct stat st;
+
+            Set(fstat(file, &st), st);
+		}
+
         TStat(const std::string &path)
         {
             struct stat st;
 
-            if (lstat(path.c_str(), &st) == 0) {
-                feed(st);
-            } else if (errno == EACCES) {
-                type = EAccess;
-            }
+            Set(lstat(path.c_str(), &st), st);
         }
 
-        void feed(const struct stat &st) noexcept
+        void Set(int rv, const struct stat &st) noexcept
         {
-            loc = TLoc(st.st_dev, st.st_ino);
+			if (rv == 0) {
+				Loc = TLoc(st.st_dev, st.st_ino);
 
-            links = st.st_nlink;
+				Links = st.st_nlink;
+                Bytes = st.st_size;
 
-            if (S_ISREG(st.st_mode)) {
-                type = EReg;
-            } else if (S_ISDIR(st.st_mode)) {
-                type = EDir;
-            } else if (S_ISCHR(st.st_mode)) {
-                type = EChar;
-            } else if (S_ISBLK(st.st_mode)) {
-                type = EBlock;
-            } else if (S_ISFIFO(st.st_mode)) {
-                type = EFifo;
-            } else if (S_ISLNK(st.st_mode))  {
-                type = ELink;
-            } else if (S_ISSOCK(st.st_mode)) {
-                type = ESock;
+				if (S_ISREG(st.st_mode)) {
+					Type = ENode::File;
+				} else if (S_ISDIR(st.st_mode)) {
+					Type = ENode::Dir;
+				} else if (S_ISCHR(st.st_mode)) {
+					Type = ENode::Char;
+				} else if (S_ISBLK(st.st_mode)) {
+					Type = ENode::Block;
+				} else if (S_ISFIFO(st.st_mode)) {
+					Type = ENode::Fifo;
+				} else if (S_ISLNK(st.st_mode))  {
+					Type = ENode::Link;
+				} else if (S_ISSOCK(st.st_mode)) {
+					Type = ENode::Sock;
+				}
+			} else if (errno == EACCES) {
+                Type = ENode::Access;
             }
         }
 
-        FType       type    = EInvalid;
-        TLoc        loc;
-        nlink_t     links   = 0;
+        ENode       Type    = ENode::None;
+        TLoc        Loc;
+        uint32_t    Links   = 0;
+        uint64_t    Bytes   = 0;
     };
 }
