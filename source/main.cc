@@ -6,6 +6,7 @@
 #include "monit.h"
 #include "file.h"
 #include "top.h"
+#include "touch.h"
 
 
 int do_trace(int argc, char *argv[]);
@@ -33,6 +34,8 @@ int main(int argc, char *argv[])
             return do_stats(argc--, argv++);
         } else if (mod == "lock") {
             return do_lock(argc--, argv++);
+        } else if (mod == "read") {
+            return TMod_Read().Handle(argc--, argv++);
         } else {
             std::cerr << "unknown mode " << mod << std::endl;
 
@@ -244,6 +247,12 @@ void usage() noexcept
         << "\n Options for lock"
         << "\n   -f path    Path to file for locking in memory"
         << "\n   -s seconds How long to keep memory locked"
+        << "\n\n Options for read"
+        << "\n   -f path    Path to real file for read from"
+        << "\n   -b bytes   Read granularity in bytes"
+        << "\n   -r msecs   Read period in milliseconds (ms)"
+        << "\n   -c cycles  Number of block reads to perform"
+        << "\n   -m mode    Mode: seq - sequential, rnd - random"
         << std::endl;
 }
 

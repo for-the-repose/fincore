@@ -1,6 +1,4 @@
-/*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
-
-#pragma once
+#pragma once /*__ GPL 3.0, 2019 Alexander Soloviev (no.friday@yandex.ru) */
 
 #include <unistd.h>
 #include <errno.h>
@@ -107,9 +105,11 @@ namespace NOs {
     public:
         TFile() = default;
 
-        TFile(const std::string &path)
+        TFile(const std::string &path, bool direct = false)
         {
-            if ((fd = ::open(path.data(), O_RDONLY)) < 0)
+            int flags = O_RDONLY | (direct ? O_DIRECT : 0);
+
+            if ((fd = ::open(path.data(), flags)) < 0)
                 throw TError("cannot open file");
         }
 
