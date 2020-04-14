@@ -45,7 +45,7 @@ namespace NParts {
 
             TIter& operator++()   noexcept { return at++, *this; }
 
-			TIter& operator--()   noexcept { return at--, *this; }
+            TIter& operator--()   noexcept { return at--, *this; }
 
             TIter operator++(int) noexcept { return at++, *this; }
 

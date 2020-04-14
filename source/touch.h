@@ -9,39 +9,39 @@
 class TMod_Read {
 
     struct TCfg {
-		size_t Gran = 4096;
-		size_t Delay = 0;	    /* milliseconds */
+        size_t Gran = 4096;
+        size_t Delay = 0;       /* milliseconds */
         size_t Count = Max<size_t>();
         bool Random = false;
         bool Direct = false;    /* Use direct IO */
     };
 
 public:
-	int Handle(int argc, char *argv[])
-	{
-	    extern char *optarg;
+    int Handle(int argc, char *argv[])
+    {
+        extern char *optarg;
 
-		std::string path;
+        std::string path;
         TCfg cfg{ };
 
-		while (true) {
-			static const char opts[] = "f:m:b:r:c:d";
+        while (true) {
+            static const char opts[] = "f:m:b:r:c:d";
 
-			const int opt = getopt(argc, argv, opts);
+            const int opt = getopt(argc, argv, opts);
 
-			if (opt < 0) break;
+            if (opt < 0) break;
 
-			if (opt == 'f') {
-				path = optarg;
-			} else if (opt == 'b') {
-				cfg.Gran = std::stoull(optarg);
-			} else if (opt == 'r') {
-				cfg.Delay = std::stoull(optarg);
+            if (opt == 'f') {
+                path = optarg;
+            } else if (opt == 'b') {
+                cfg.Gran = std::stoull(optarg);
+            } else if (opt == 'r') {
+                cfg.Delay = std::stoull(optarg);
             } else if (opt == 'c') {
-				cfg.Count = std::stoull(optarg);
+                cfg.Count = std::stoull(optarg);
             } else if (opt == 'd') {
                 cfg.Direct = true;
-			} else if (opt == 'm') {
+            } else if (opt == 'm') {
                 const std::string rname(optarg);
 
                 if (rname == "seq") {
@@ -54,24 +54,24 @@ public:
                     return 1;
                 }
             }
-		}
+        }
 
-		cfg.Gran = NMisc::DivUp(cfg.Gran, 4096) * 4096;
+        cfg.Gran = NMisc::DivUp(cfg.Gran, 4096) * 4096;
 
-		return Run(path, cfg);
-	}
+        return Run(path, cfg);
+    }
 
-	int Run(const std::string &path, const TCfg &cfg)
-	{
-		NOs::TFile  file;
+    int Run(const std::string &path, const TCfg &cfg)
+    {
+        NOs::TFile  file;
 
-		try {
-			file = NOs::TFile(path, cfg.Direct);
-		} catch (TError &error) {
-			std::cerr << error.what() << std::endl;
+        try {
+            file = NOs::TFile(path, cfg.Direct);
+        } catch (TError &error) {
+            std::cerr << error.what() << std::endl;
 
-			return 2;
-		}
+            return 2;
+        }
 
         const uint64_t bytes = NOs::TStat(file).Bytes;
         const uint64_t slots = NMisc::DivUp(bytes, cfg.Gran);
@@ -86,15 +86,15 @@ public:
 
         auto pos = Max<uint64_t>(); /* current read position */
 
-	    for (NUtils::TTicks ti(cfg.Delay, cfg.Count); ti();) {
+        for (NUtils::TTicks ti(cfg.Delay, cfg.Count); ti();) {
             pos = (pos + (cfg.Random ? rnd(entropy) : 1)) % slots;
 
             if (!Read(file, buf, cfg.Gran, pos * cfg.Gran, cfg.Direct))
                 return 2;
-		}
+        }
 
         return 0;
-	}
+    }
 
     static uint64_t Read(const NOs::TFile &file, uint8_t *buf,
                         const uint64_t bytes, off_t offset, bool direct)

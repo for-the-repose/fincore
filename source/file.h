@@ -21,7 +21,7 @@ namespace NOs {
     };
 
     enum ENode {
-        None    	= 0,
+        None        = 0,
         File        = 1,
         Dir         = 2,
         Char        = 3,
@@ -161,12 +161,12 @@ namespace NOs {
     };
 
     struct TStat {
-		TStat(const TFile &file)
-		{
+        TStat(const TFile &file)
+        {
             struct stat st;
 
             Set(fstat(file, &st), st);
-		}
+        }
 
         TStat(const std::string &path)
         {
@@ -177,28 +177,28 @@ namespace NOs {
 
         void Set(int rv, const struct stat &st) noexcept
         {
-			if (rv == 0) {
-				Loc = TLoc(st.st_dev, st.st_ino);
+            if (rv == 0) {
+                Loc = TLoc(st.st_dev, st.st_ino);
 
-				Links = st.st_nlink;
+                Links = st.st_nlink;
                 Bytes = st.st_size;
 
-				if (S_ISREG(st.st_mode)) {
-					Type = ENode::File;
-				} else if (S_ISDIR(st.st_mode)) {
-					Type = ENode::Dir;
-				} else if (S_ISCHR(st.st_mode)) {
-					Type = ENode::Char;
-				} else if (S_ISBLK(st.st_mode)) {
-					Type = ENode::Block;
-				} else if (S_ISFIFO(st.st_mode)) {
-					Type = ENode::Fifo;
-				} else if (S_ISLNK(st.st_mode))  {
-					Type = ENode::Link;
-				} else if (S_ISSOCK(st.st_mode)) {
-					Type = ENode::Sock;
-				}
-			} else if (errno == EACCES) {
+                if (S_ISREG(st.st_mode)) {
+                    Type = ENode::File;
+                } else if (S_ISDIR(st.st_mode)) {
+                    Type = ENode::Dir;
+                } else if (S_ISCHR(st.st_mode)) {
+                    Type = ENode::Char;
+                } else if (S_ISBLK(st.st_mode)) {
+                    Type = ENode::Block;
+                } else if (S_ISFIFO(st.st_mode)) {
+                    Type = ENode::Fifo;
+                } else if (S_ISLNK(st.st_mode))  {
+                    Type = ENode::Link;
+                } else if (S_ISSOCK(st.st_mode)) {
+                    Type = ENode::Sock;
+                }
+            } else if (errno == EACCES) {
                 Type = ENode::Access;
             }
         }

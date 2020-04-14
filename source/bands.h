@@ -106,7 +106,7 @@ namespace NStats {
                 for (; span && it != Bands.end(); it++) {
                     it->Inc(span);
                 }
-			}
+            }
 
             assert(!span);
         }
