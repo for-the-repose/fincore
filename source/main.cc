@@ -7,6 +7,7 @@
 #include "file.h"
 #include "top.h"
 #include "touch.h"
+#include "write.h"
 
 
 int do_trace(int argc, char *argv[]);
@@ -26,20 +27,28 @@ int main(int argc, char *argv[])
     } else {
         std::string mod(argv[1]);
 
-        if (mod == "trace") {
-            return do_trace(argc--, argv++);
-        } else if (mod == "evict") {
-            return do_evict(argc--, argv++);
-        } else if (mod == "stats") {
-            return do_stats(argc--, argv++);
-        } else if (mod == "lock") {
-            return do_lock(argc--, argv++);
-        } else if (mod == "read") {
-            return TMod_Read().Handle(argc--, argv++);
-        } else {
-            std::cerr << "unknown mode " << mod << std::endl;
+        try {
+            if (mod == "trace") {
+                return do_trace(argc--, argv++);
+            } else if (mod == "evict") {
+                return do_evict(argc--, argv++);
+            } else if (mod == "stats") {
+                return do_stats(argc--, argv++);
+            } else if (mod == "lock") {
+                return do_lock(argc--, argv++);
+            } else if (mod == "read") {
+                return TMod_Read().Handle(argc--, argv++);
+            } else if (mod == "write") {
+                return TMod_Write().Handle(argc--, argv++);
+            } else {
+                std::cerr << "unknown mode " << mod << std::endl;
 
-            return 1;
+                return 1;
+            }
+        } catch (TError &err) {
+            std::cerr << err.what() << std::endl;
+
+            return 3;
         }
     }
 
@@ -223,18 +232,15 @@ void usage() noexcept
 {
     std::cerr
         << "fincore mode [ ARGS ] ..."
-        << "\n"
-        << "\n Options for trace"
+        << "\n\n Mode `trace`, show compact single file cache map"
         << "\n   -f path    Path to file for tracing"
         << "\n   -c count   How many snaps make"
         << "\n   -d gran    Time granulation, secs"
         << "\n   -r float   Refresh changes threshold"
         << "\n   -s sampl   Minimal samples bands"
-        << "\n"
-        << "\n Options for evict"
+        << "\n\n Mode `evict`, try to evicts file data from memory"
         << "\n   -f path    Path to file for evicting"
-        << "\n"
-        << "\n Options for stats"
+        << "\n\n Mode `stats`, collects files cache raito"
         << "\n   -f path    Path to directory for stats"
         << "\n   -i         Read path names from stdin"
         << "\n   -d depth   Depth detalization limit"
@@ -243,15 +249,21 @@ void usage() noexcept
         << "\n   -l items   Items limit for reduction"
         << "\n   -s         Collect root summary stats"
         << "\n   -c raito   Cache filter raito for aggr"
-        << "\n"
-        << "\n Options for lock"
+        << "\n\n Mope `lock`, locks file for a while"
         << "\n   -f path    Path to file for locking in memory"
         << "\n   -s seconds How long to keep memory locked"
-        << "\n\n Options for read"
+        << "\n\n Mode `read`, generates IO read load on a file"
         << "\n   -f path    Path to real file for read from"
         << "\n   -b bytes   Read granularity in bytes"
         << "\n   -r msecs   Read period in milliseconds (ms)"
         << "\n   -c cycles  Number of block reads to perform"
+        << "\n   -m mode    Mode: seq - sequential, rnd - random"
+        << "\n\n Mode `write`, generates IO write load to a file"
+        << "\n   -f path    Path to file, will be overwritten"
+        << "\n   -b bytes   Write granularity in bytes"
+        << "\n   -s bytes   Total file size to produce, rounded"
+        << "\n   -r msecs   Write period in milliseconds (ms)"
+        << "\n   -c cycles  Number of block writes to perform"
         << "\n   -m mode    Mode: seq - sequential, rnd - random"
         << std::endl;
 }

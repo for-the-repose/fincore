@@ -105,11 +105,15 @@ namespace NOs {
     public:
         TFile() = default;
 
-        TFile(const std::string &path, bool direct = false)
+        TFile(const std::string &path, bool direct = false, bool rdonly = true,
+                    bool create = false)
         {
-            int flags = O_RDONLY | (direct ? O_DIRECT : 0);
+            int flags =
+                    (rdonly ? O_RDONLY : O_WRONLY)
+                    | (direct ? O_DIRECT : 0)
+                    | (create ? O_CREAT : 0);
 
-            if ((fd = ::open(path.data(), flags)) < 0)
+            if ((fd = ::open(path.data(), flags, 0660)) < 0)
                 throw TError("cannot open file");
         }
 
@@ -208,4 +212,38 @@ namespace NOs {
         uint32_t    Links   = 0;
         uint64_t    Bytes   = 0;
     };
+
+    inline void* MMap_Anon(size_t bytes)
+    {
+        auto *ptr = ::mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
+                MAP_ANONYMOUS | MAP_PRIVATE | MAP_LOCKED,  -1, 0);
+
+        if (ptr != MAP_FAILED) return ptr;
+
+        throw TError("locked mmap-ed mem alloc error");
+    }
+
+    inline uint64_t Read(const NOs::TFile &file, uint8_t *buf,
+                        const uint64_t bytes, off_t offset, bool direct)
+    {
+        for (uint64_t left = bytes; ; ) {
+            auto got = ::pread(file, buf, left, offset);
+
+            if (got >= 0) {
+                auto skip = std::min(left, uint64_t(got));
+
+                left -= skip, offset += skip;
+            } else if (errno == EAGAIN || errno == EINTR) {
+                continue;
+            } else {
+                std::cerr << "On read got errno=" << errno << "\n";
+
+                got = 0; /* exit on fatal read error */
+            }
+
+            if (got == 0 || left == 0 || (got > 0 && direct))
+                return bytes - left;
+        }
+    }
+
 }
