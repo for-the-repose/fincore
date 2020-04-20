@@ -11,12 +11,13 @@ class TMod_Write {
 
     struct TCfg {
         size_t Gran = 4096;
-        uint64_t Delay = 0;       /* milliseconds */
+        uint64_t Delay = 0;     /* Delay between cunk writes, ms    */
         uint64_t Count = Max<uint64_t>();
         uint64_t Bytes = 0;
         uint64_t Sync = Max<uint64_t>();
         bool Random = false;
-        bool Direct = false;    /* Use direct IO */
+        bool Direct = false;    /* Use direct IO                    */
+        bool Evict = false;     /* Try to evict cache after sync    */
     };
 
 public:
@@ -28,7 +29,7 @@ public:
         TCfg cfg{ };
 
         while (true) {
-            static const char opts[] = "f:m:b:r:c:ds:u:";
+            static const char opts[] = "f:m:b:r:c:ds:u:e";
 
             const int opt = getopt(argc, argv, opts);
 
@@ -46,6 +47,8 @@ public:
                 cfg.Count = std::stoull(optarg);
             } else if (opt == 'd') {
                 cfg.Direct = true;
+            } else if (opt == 'e') {
+                cfg.Evict = true;
             } else if (opt == 'u') {
                 cfg.Sync = std::stoull(optarg);
             } else if (opt == 'm') {
@@ -66,6 +69,10 @@ public:
         cfg.Gran = NMisc::DivUp(cfg.Gran, 4096) * 4096;
         cfg.Bytes = NMisc::DivUp(cfg.Bytes, cfg.Gran) * cfg.Gran;
 
+        if (cfg.Evict && cfg.Sync > 1024) {
+            throw TError("For -e -u CYC have to be CYC <= 1024");
+        }
+
         return Run(path, cfg);
     }
 
@@ -81,6 +88,7 @@ public:
 
         const size_t keys_num = 16;
 
+        std::vector<uint64_t> offsets(cfg.Sync, Max<uint64_t>());
         std::vector<uint8_t*> key_store(keys_num, nullptr);
 
         for (size_t it = 0; it < keys_num; it++) {
@@ -130,6 +138,8 @@ public:
             const auto *key = key_store[key_sel(entropy)];
             auto got = ::pwrite(file, key, cfg.Gran, pos * cfg.Gran);
 
+            if (cfg.Evict) offsets[unsynced_cycles] = pos * cfg.Gran;
+
             if (got < 0 || size_t(got) != cfg.Gran) {
                 std::cerr
                     << "Cannot write data, rv=" << got
@@ -138,6 +148,11 @@ public:
                 return 2;
             } else if (++unsynced_cycles >= cfg.Sync) {
                 fdatasync(file); unsynced_cycles = 0;
+
+                for (size_t num = 0; num < (cfg.Evict ? cfg.Sync : 0); num++) {
+                    const auto mode = POSIX_FADV_DONTNEED;
+                    posix_fadvise(file, offsets[num], cfg.Gran, mode);
+                }
             }
         }
 

@@ -266,6 +266,8 @@ void usage() noexcept
         << "\n   -c cycles  Number of block writes to perform"
         << "\n   -m mode    Mode: seq - sequential, rnd - random"
         << "\n   -u skip    sync fd each skip write cycles"
+        << "\n   -d         Open file in O_DIRECT mode"
+        << "\n   -e         Try to evict just sync-ed file slices"
         << std::endl;
 }
 
