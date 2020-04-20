@@ -265,6 +265,7 @@ void usage() noexcept
         << "\n   -r msecs   Write period in milliseconds (ms)"
         << "\n   -c cycles  Number of block writes to perform"
         << "\n   -m mode    Mode: seq - sequential, rnd - random"
+        << "\n   -u skip    sync fd each skip write cycles"
         << std::endl;
 }
 

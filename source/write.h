@@ -11,9 +11,10 @@ class TMod_Write {
 
     struct TCfg {
         size_t Gran = 4096;
-        size_t Delay = 0;       /* milliseconds */
-        size_t Count = Max<size_t>();
-        size_t Bytes = 0;
+        uint64_t Delay = 0;       /* milliseconds */
+        uint64_t Count = Max<uint64_t>();
+        uint64_t Bytes = 0;
+        uint64_t Sync = Max<uint64_t>();
         bool Random = false;
         bool Direct = false;    /* Use direct IO */
     };
@@ -27,7 +28,7 @@ public:
         TCfg cfg{ };
 
         while (true) {
-            static const char opts[] = "f:m:b:r:c:ds:";
+            static const char opts[] = "f:m:b:r:c:ds:u:";
 
             const int opt = getopt(argc, argv, opts);
 
@@ -45,6 +46,8 @@ public:
                 cfg.Count = std::stoull(optarg);
             } else if (opt == 'd') {
                 cfg.Direct = true;
+            } else if (opt == 'u') {
+                cfg.Sync = std::stoull(optarg);
             } else if (opt == 'm') {
                 const std::string rname(optarg);
 
@@ -118,6 +121,7 @@ public:
         std::uniform_int_distribution<uint64_t> rnd(1, slots);
         std::uniform_int_distribution<size_t> key_sel(0, keys_num - 1);
 
+        uint64_t unsynced_cycles = 0;
         auto pos = Max<uint64_t>(); /* current read position */
 
         for (NUtils::TTicks ti(cfg.Delay, cfg.Count); ti();) {
@@ -132,6 +136,8 @@ public:
                     << ", " << "errno=" << errno << "\n";
 
                 return 2;
+            } else if (++unsynced_cycles >= cfg.Sync) {
+                fdatasync(file); unsynced_cycles = 0;
             }
         }
 
