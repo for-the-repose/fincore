@@ -14,7 +14,7 @@ class TMod_Write {
         uint64_t Delay = 0;     /* Delay between cunk writes, ms    */
         uint64_t Count = Max<uint64_t>();
         uint64_t Bytes = 0;
-        uint64_t Sync = Max<uint64_t>();
+        uint64_t Sync = 0;      /* Zero disables data sync on write */
         bool Random = false;
         bool Direct = false;    /* Use direct IO                    */
         bool Evict = false;     /* Try to evict cache after sync    */
@@ -69,9 +69,11 @@ public:
         cfg.Gran = NMisc::DivUp(cfg.Gran, 4096) * 4096;
         cfg.Bytes = NMisc::DivUp(cfg.Bytes, cfg.Gran) * cfg.Gran;
 
-        if (cfg.Evict && cfg.Sync > 1024) {
+        if (cfg.Sync > 1024) {
             throw TError("For -e -u CYC have to be CYC <= 1024");
         }
+
+        cfg.Evict = cfg.Evict && cfg.Sync > 0;
 
         return Run(path, cfg);
     }
@@ -146,7 +148,7 @@ public:
                     << ", " << "errno=" << errno << "\n";
 
                 return 2;
-            } else if (++unsynced_cycles >= cfg.Sync) {
+            } else if (cfg.Sync && ++unsynced_cycles >= cfg.Sync) {
                 fdatasync(file); unsynced_cycles = 0;
 
                 for (size_t num = 0; num < (cfg.Evict ? cfg.Sync : 0); num++) {
