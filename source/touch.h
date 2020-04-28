@@ -10,8 +10,9 @@ class TMod_Read {
 
     struct TCfg {
         size_t Gran = 4096;
-        size_t Delay = 0;       /* milliseconds */
-        size_t Count = Max<size_t>();
+        uint64_t Delay = 0;       /* milliseconds */
+        uint64_t Count = Max<uint64_t>();
+        uint64_t Sync = 0;      /* Zero disables data sync on write */
         bool Random = false;
         bool Direct = false;    /* Use direct IO */
     };
@@ -25,7 +26,7 @@ public:
         TCfg cfg{ };
 
         while (true) {
-            static const char opts[] = "f:m:b:r:c:d";
+            static const char opts[] = "f:m:b:r:c:de:";
 
             const int opt = getopt(argc, argv, opts);
 
@@ -41,6 +42,8 @@ public:
                 cfg.Count = std::stoull(optarg);
             } else if (opt == 'd') {
                 cfg.Direct = true;
+            } else if (opt == 'e') {
+                cfg.Sync = std::stoull(optarg);
             } else if (opt == 'm') {
                 const std::string rname(optarg);
 
@@ -73,6 +76,8 @@ public:
             return 2;
         }
 
+        std::vector<uint64_t> offsets(cfg.Sync, Max<uint64_t>());
+
         const uint64_t bytes = NOs::TStat(file).Bytes;
         const uint64_t slots = NMisc::DivUp(bytes, cfg.Gran);
 
@@ -83,13 +88,24 @@ public:
 
         auto *buf = (uint8_t*)NOs::MMap_Anon(cfg.Gran);
 
+        uint64_t unsynced_cycles = 0;
         auto pos = Max<uint64_t>(); /* current read position */
 
         for (NUtils::TTicks ti(cfg.Delay, cfg.Count); ti();) {
             pos = (pos + (cfg.Random ? rnd(entropy) : 1)) % slots;
 
-            if (!NOs::Read(file, buf, cfg.Gran, pos * cfg.Gran, cfg.Direct))
+            if (cfg.Sync) offsets[unsynced_cycles++] = pos * cfg.Gran;
+
+            if (!NOs::Read(file, buf, cfg.Gran, pos * cfg.Gran, cfg.Direct)) {
                 return 2;
+            } else if (cfg.Sync && unsynced_cycles >= cfg.Sync) {
+                const auto slots = std::exchange(unsynced_cycles, 0);
+
+                for (size_t num = 0; num < slots; num++) {
+                    const auto mode = POSIX_FADV_DONTNEED;
+                    posix_fadvise(file, offsets[num], cfg.Gran, mode);
+                }
+            }
         }
 
         return 0;

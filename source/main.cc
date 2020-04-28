@@ -258,6 +258,7 @@ void usage() noexcept
         << "\n   -r msecs   Read period in milliseconds (ms)"
         << "\n   -c cycles  Number of block reads to perform"
         << "\n   -m mode    Mode: seq - sequential, rnd - random"
+        << "\n   -e skip    Evict data at once for SKIP reads"
         << "\n\n Mode `write`, generates IO write load to a file"
         << "\n   -f path    Path to file, will be overwritten"
         << "\n   -b bytes   Write granularity in bytes"
